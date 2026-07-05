@@ -29,6 +29,7 @@ Thumbs.db
 *.zip
 *.tar.gz
 *.rar
+!lib/*.jar
 
 # License key (private)
 src/main/java/License.java
