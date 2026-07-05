@@ -1,0 +1,321 @@
+name: Build Native Packages
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version tag (e.g. 1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  package:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            arch: arm64
+            icon: src/main/resources/app_icon.icns
+            doc_icon: src/main/resources/doc_icon.icns
+            pkg_type: dmg
+            label: macos-arm64
+          - os: windows-latest
+            arch: x64
+            icon: src/main/resources/app_icon.ico
+            doc_icon: src/main/resources/doc_icon.ico
+            pkg_type: msi
+            label: windows-x64
+          - os: windows-11-arm
+            arch: arm64
+            icon: src/main/resources/app_icon.ico
+            doc_icon: src/main/resources/doc_icon.ico
+            pkg_type: msi
+            label: windows-arm64
+          - os: ubuntu-22.04
+            arch: x64
+            icon: src/main/resources/app_icon_256.png
+            doc_icon: src/main/resources/doc_icon_256.png
+            pkg_type: deb
+            label: linux-x64-deb
+          - os: ubuntu-22.04
+            arch: x64
+            icon: src/main/resources/app_icon_256.png
+            doc_icon: src/main/resources/doc_icon_256.png
+            pkg_type: rpm
+            label: linux-x64-rpm
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            icon: src/main/resources/app_icon_256.png
+            doc_icon: src/main/resources/doc_icon_256.png
+            pkg_type: deb
+            label: linux-arm64-deb
+          - os: ubuntu-24.04-arm
+            arch: arm64
+            icon: src/main/resources/app_icon_256.png
+            doc_icon: src/main/resources/doc_icon_256.png
+            pkg_type: rpm
+            label: linux-arm64-rpm
+
+    runs-on: ${{ matrix.os }}
+    name: Package (${{ matrix.label }})
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Normalize version
+        shell: bash
+        run: |
+          VERSION="${{ inputs.version }}"
+          echo "APP_VERSION=${VERSION#v}" >> $GITHUB_ENV
+
+      - name: Import Developer ID certificate (macOS)
+        if: runner.os == 'macOS'
+        env:
+          CERTIFICATE_BASE64: ${{ secrets.APPLE_CERTIFICATE_BASE64 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+          KEYCHAIN_PASSWORD=build-keychain-password
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          echo "$CERTIFICATE_BASE64" | base64 --decode -o $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 -k $KEYCHAIN_PATH -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+      - name: Build fat JAR
+        shell: bash
+        run: |
+          mvn clean package -DskipTests=true
+          mkdir -p staging
+          cp target/CodegenIDE-*.jar staging/
+          # Include the lib/ jars needed at runtime
+          cp lib/Codegen.jar staging/
+          cp lib/Utils.jar staging/
+          cp lib/antlr-4.13.0-complete.jar staging/
+          # Determine the actual jar filename for jpackage
+          JARFILE=$(ls staging/CodegenIDE-*.jar | head -1 | xargs basename)
+          echo "JARFILE=$JARFILE" >> $GITHUB_ENV
+
+      - name: Install RPM tools (Linux RPM)
+        if: matrix.pkg_type == 'rpm'
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      - name: Install WiX Toolset (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          curl -L -o wix314-binaries.zip https://github.com/wixtoolset/wix3/releases/download/wix3141rtm/wix314-binaries.zip
+          mkdir -p wix
+          unzip -q wix314-binaries.zip -d wix
+          echo "$PWD/wix" >> $GITHUB_PATH
+
+      - name: Create file associations config
+        shell: bash
+        run: |
+          cat > fa-src.properties <<EOF
+          mime-type=text/x-codegen
+          extension=src
+          icon=${{ matrix.doc_icon }}
+          description=Codegen Source File
+          EOF
+
+      - name: Run jpackage
+        shell: bash
+        run: |
+          # Ensure WiX is on PATH for Windows builds
+          if [ -d "$GITHUB_WORKSPACE/wix" ]; then
+            export PATH="$GITHUB_WORKSPACE/wix:$PATH"
+          fi
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            jpackage \
+              --input staging \
+              --main-jar ${{ env.JARFILE }} \
+              --main-class CodegenApp \
+              --name CodegenIDE \
+              --app-version "${{ env.APP_VERSION }}" \
+              --vendor "Pure Programmer" \
+              --copyright "(C) 2026 Pure Programmer" \
+              --description "A lightweight IDE for the Codegen programming language" \
+              --icon "${{ matrix.icon }}" \
+              --file-associations fa-src.properties \
+              --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6" \
+              --type app-image
+          elif [ "${{ runner.os }}" = "Linux" ]; then
+            jpackage \
+              --input staging \
+              --main-jar ${{ env.JARFILE }} \
+              --main-class CodegenApp \
+              --name CodegenIDE \
+              --app-version "${{ env.APP_VERSION }}" \
+              --vendor "Pure Programmer" \
+              --copyright "(C) 2026 Pure Programmer" \
+              --description "A lightweight IDE for the Codegen programming language" \
+              --icon "${{ matrix.icon }}" \
+              --file-associations fa-src.properties \
+              --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6" \
+              --type app-image
+
+            # Package from the app-image
+            jpackage \
+              --app-image CodegenIDE \
+              --name CodegenIDE \
+              --app-version "${{ env.APP_VERSION }}" \
+              --vendor "Pure Programmer" \
+              --copyright "(C) 2026 Pure Programmer" \
+              --description "A lightweight IDE for the Codegen programming language" \
+              --icon "${{ matrix.icon }}" \
+              --file-associations fa-src.properties \
+              --linux-app-category development \
+              --linux-menu-group "Development;IDE;" \
+              --linux-package-deps "xdg-utils" \
+              --type ${{ matrix.pkg_type }}
+
+            # Fix deb dependencies
+            if [ "${{ matrix.pkg_type }}" = "deb" ]; then
+              DEB_FILE=$(ls codegenide_*.deb 2>/dev/null || ls codegenide*.deb 2>/dev/null)
+              if [ -n "$DEB_FILE" ]; then
+                TMPDIR=$(mktemp -d)
+                dpkg-deb -R "$DEB_FILE" "$TMPDIR"
+                sed -i 's/^Depends:.*/Depends: xdg-utils/' "$TMPDIR/DEBIAN/control"
+                dpkg-deb -b "$TMPDIR" "$DEB_FILE"
+                rm -rf "$TMPDIR"
+              fi
+            fi
+          else
+            jpackage \
+              --input staging \
+              --main-jar ${{ env.JARFILE }} \
+              --main-class CodegenApp \
+              --name CodegenIDE \
+              --app-version "${{ env.APP_VERSION }}" \
+              --vendor "Pure Programmer" \
+              --copyright "(C) 2026 Pure Programmer" \
+              --description "A lightweight IDE for the Codegen programming language" \
+              --icon "${{ matrix.icon }}" \
+              --file-associations fa-src.properties \
+              --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6" \
+              --win-menu \
+              --win-shortcut \
+              --type ${{ matrix.pkg_type }}
+          fi
+
+      - name: Sign and notarize (macOS)
+        if: runner.os == 'macOS'
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          KEY_FILE=$RUNNER_TEMP/AuthKey_${APPLE_API_KEY_ID}.p8
+          echo "${{ secrets.APPLE_API_KEY }}" > "$KEY_FILE"
+          IDENTITY="Developer ID Application: ${{ secrets.APPLE_SIGNING_IDENTITY }}"
+
+          # Sign all nested dylibs and executables first
+          find CodegenIDE.app -type f \( -name "*.dylib" -o -name "*.jnilib" -o -perm +111 \) | while read f; do
+            codesign --force --options runtime --timestamp --sign "$IDENTITY" --keychain $RUNNER_TEMP/build.keychain "$f"
+          done
+
+          # Sign the app bundle
+          codesign --force --options runtime --timestamp --sign "$IDENTITY" --keychain $RUNNER_TEMP/build.keychain CodegenIDE.app
+
+          # Verify signature
+          codesign --verify --deep --strict CodegenIDE.app
+
+          # Create DMG with Applications alias and volume icon
+          DMG_DIR=dmg_contents
+          mkdir -p "$DMG_DIR"
+          cp -R CodegenIDE.app "$DMG_DIR/"
+          ln -s /Applications "$DMG_DIR/Applications"
+          cp src/main/resources/app_icon.icns "$DMG_DIR/.VolumeIcon.icns"
+
+          hdiutil create -volname CodegenIDE -srcfolder "$DMG_DIR" -ov -format UDRW /tmp/codegenide-rw.dmg
+          hdiutil attach /tmp/codegenide-rw.dmg -mountpoint /tmp/dmg-vol
+          SetFile -a C /tmp/dmg-vol || true
+          hdiutil detach /tmp/dmg-vol
+          hdiutil convert /tmp/codegenide-rw.dmg -format UDZO -o CodegenIDE-${APP_VERSION}.dmg
+
+          # Sign the DMG
+          codesign --force --timestamp --sign "$IDENTITY" --keychain $RUNNER_TEMP/build.keychain CodegenIDE-${APP_VERSION}.dmg
+
+          # Notarize
+          xcrun notarytool submit CodegenIDE-${APP_VERSION}.dmg \
+            --key "$KEY_FILE" \
+            --key-id "$APPLE_API_KEY_ID" \
+            --issuer "$APPLE_API_ISSUER" \
+            --wait | tee notarize_output.txt
+
+          # Fetch log if notarization failed
+          if grep -q "Invalid" notarize_output.txt; then
+            SUBMISSION_ID=$(grep "id:" notarize_output.txt | head -1 | awk '{print $2}')
+            xcrun notarytool log "$SUBMISSION_ID" \
+              --key "$KEY_FILE" \
+              --key-id "$APPLE_API_KEY_ID" \
+              --issuer "$APPLE_API_ISSUER" || true
+            exit 1
+          fi
+
+          # Staple
+          xcrun stapler staple CodegenIDE-${APP_VERSION}.dmg
+
+      - name: Azure login (Windows)
+        if: runner.os == 'Windows'
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Sign installer (Windows)
+        if: runner.os == 'Windows'
+        uses: azure/artifact-signing-action@v2
+        with:
+          endpoint: ${{ secrets.AZURE_SIGNING_ENDPOINT }}
+          signing-account-name: ${{ secrets.AZURE_SIGNING_ACCOUNT_NAME }}
+          certificate-profile-name: ${{ secrets.AZURE_SIGNING_CERTIFICATE_PROFILE_NAME }}
+          files-folder: ${{ github.workspace }}
+          files-folder-filter: msi
+          file-digest: SHA256
+          timestamp-rfc3161: http://timestamp.acs.microsoft.com
+          timestamp-digest: SHA256
+
+      - name: Rename package with architecture
+        shell: bash
+        run: |
+          for f in *.dmg; do [ -f "$f" ] && mv "$f" "${f%.dmg}-${{ matrix.arch }}.dmg" || true; done
+          for f in *.msi; do [ -f "$f" ] && mv "$f" "${f%.msi}-${{ matrix.arch }}.msi" || true; done
+
+      - name: Upload package artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: CodegenIDE-${{ matrix.label }}
+          path: |
+            *.dmg
+            *.msi
+            *.deb
+            *.rpm
+
+      - name: Attach to release
+        if: inputs.version != ''
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ inputs.version }}
+          name: CodegenIDE ${{ inputs.version }}
+          files: |
+            *.dmg
+            *.msi
+            *.deb
+            *.rpm

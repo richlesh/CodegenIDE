@@ -1,0 +1,2348 @@
+# Function Metadata
+# Types can be <char>, <int>, [double], {string|double}, «int|int|int» etc.
+# Positional arguments have no name,(no named arguments)
+# generic_name(type, type, type, ...) => return type
+#	cpp:	cppFunc({2}, {1})
+#	java:	javaFunc({1}, (char){2})
+#	js:		jsFunc({0})		# takes all arguments in original order
+#	pl:		plFunc({1})
+#	py:		pyFunc({-1})	# varargs in ...
+#	swift:	swiftFunc({1} as Int32, {2} as Character)
+
+# \{1} removes first character of replacement used to remove Perl type chars
+#	or remove quotes if quoted string
+# &{1} takes a reference of the replacement
+
+#build_header(title)
+build_header(<string>) => <string>
+	default:	Utils.buildHeader({1})
+	cpp:		Utils::buildHeader({1})
+	pl:			Utils::buildHeader({1})
+
+# pass used by Python for NOP
+pass() => void
+	py: 		pass
+	default:
+
+# shared_ptr<> needed for C++
+#shared_ptr(≤any≥, varargs...)
+shared_ptr(≤any≥,...) => ≤any≥
+	cpp:		shared_ptr<{1}>(new {1]}({-1}))
+	default:
+
+# PI
+pi() => <double>
+	cpp:		M_PI
+	cppRequire: #include <cmath>
+	java:		Math.PI
+	js:			Math.PI
+	pl:			pi()
+	plRequire:	use Math::Trig qw(pi);
+	py:			math.pi
+	pyRequire:	import math
+	rs:			PI
+	rsRequire:	use std::f64::consts::{PI};
+	swift:		Double.pi
+
+# E
+e() => <double>
+	cpp:		M_E
+	cppRequire: #include <cmath>
+	java:		Math.E
+	js:			Math.E
+	pl:			exp(1.)
+	py:			math.e
+	pyRequire:	import math
+	rs:			E
+	rsRequire:	use std::f64::consts::{E};
+	swift:		M_E
+
+# Ternary Operator
+ternary(<any>, <any>, <any>) => <any>
+	default:	{1} ? {2} : {3}
+	py:			{2} if {1} else {3} 
+	
+# defined(Any)
+defined(<any>) => <bool>
+	cpp:		Utils::defined({1})
+	java:		Utils.defined({1})
+	js:			Utils.defined({1})
+	pl:			defined({1})
+	py:			Utils.defined({1})
+	rs:			{1} != None
+	swift:		Utils.defined({1})
+
+# isfinite(x)
+isfinite(<double>) => <bool>
+	cpp:		isfinite({1})
+	java:		Double.isFinite({1})
+	js:			isFinite({1})
+	pl:			isFinite({1})
+	py:			math.isfinite({1})
+	pyRequire:	import math
+	swift:		({1}).isFinite
+
+# exit(<int>) Exit program with return code
+exit(<int>) => void
+	cpp:		exit({1})
+	java:		System.exit({1})
+	js:			process.exit({1})
+	pl:			exit {1}
+	py:			sys.exit({1})
+	rs:			process::exit({1})
+	rsRequire:	use std::process::{self};
+	swift:		exit({1})
+
+# exception_msg(<any>) => <string>
+exception_msg(<any>) => <string>
+	cpp:		Utils::exceptionMessage<char>({1})
+	cppU:		Utils::exceptionMessage<wchar_t>({1})
+	java:		Utils.exceptionMessage({1})
+	js:			String({1})
+	pl:			{1}
+	py:			str({1})
+	rs:			format!("{}", {1})
+	swift:		{1}.localizedDescription
+
+# mask32(<any>)  Mask integer to 32-bits
+mask32(<any>) => <int>
+	js:			({1})|0
+	default:	({1}) & 0xffffffff
+
+# UInt8(<any>)  Typecast to UInt8 (swift only)
+UInt8(<any>) => <byte>
+	default:	{1}
+	rs:			({1}) as u8
+	swift:		UInt8({1})
+
+# Char(<any>)  Typecast to char (swift only)
+Char(<any>) => <char>
+	default:	{1}
+	rs:			({1}) as char
+	swift:		Character({1})
+
+# Int16(<any>)	Typecast to int16 (rust and swift only)
+Int16(<any>) => <int16>
+	default:	{1}
+	rs:			({1}) as i16
+	swift:		Int16({1})
+
+# Int32(<any>)	Typecast to Int32 (rust and swift only)
+Int32(<any>) => <int32>
+	default:	{1}
+	rs:			({1}) as i32
+	swift:		Int32(truncatingIfNeeded: {1})
+
+# Int64(<any>)	Typecast to int64 (rust and swift only)
+Int64(<any>) => <int64>
+	default:	{1}
+	rs:			({1}) as i64
+	swift:		Int64({1})
+
+# Int(<any>)  Typecast to short (rust and swift only)
+Short(<any>) => <int>
+	default:	{1}
+	rs:			({1}) as i16
+	swift:		Int16({1})
+
+# Int(<any>)  Typecast to int (rust and swift only)
+Int(<any>) => <int>
+	default:	{1}
+	rs:			({1}) as isize
+	swift:		Int({1})
+
+# Long(<any>)  Typecast to long (rust and swift only)
+Long(<any>) => <long>
+	default:	{1}
+	rs:			({1}) as i64
+	swift:		Int64({1})
+
+# USize(<any>)	Typecast to usize (rust only)
+USize(<any>) => <uint>
+	default:	{1}
+	rs:			({1}) as usize
+
+# Double(<any>)	 Typecast to double (rust and swift only)
+Double(<any>) => <double>
+	default:	{1}
+	rs:			({1}) as f64
+	swift:		Double({1})
+
+#String(<any>)	Typecast string literal to string (rust & swift only)
+String(<any>) => <string>
+	rs:			String::from({1})
+	swift:		String({1})
+	default:	{1}
+
+#global(<any>)	Declare variable in global scope inside functions for Python
+global(<any>) => void
+	py:			global {1}
+	default:	
+
+#program_args_equal(<int>) Check for <int> command line arguments
+program_args_equal(<int>) => <bool>
+	cpp:		argc == {1} + 1
+	java:		args.length == {1}
+	js:			process.argv.length == {1} + 2
+	pl:			scalar(@ARGV) == {1}
+	py:			len(sys.argv) == {1} + 1
+	rs:			args.len() == {1} + 1
+	swift:		CommandLine.arguments.count == {1} + 1
+	
+#program_args_not_equal(<int>) Check for not <int> command line arguments
+program_args_not_equal(<int>) => <bool>
+	cpp:		argc != {1} + 1
+	java:		args.length != {1}
+	js:			process.argv.length != {1} + 2
+	pl:			scalar(@ARGV) != {1}
+	py:			len(sys.argv) != {1} + 1
+	rs:			args.len() != {1} + 1
+	swift:		CommandLine.arguments.count != {1} + 1
+	
+#program_args_equal_or_more(<int>) Check for <int> command line arguments or more
+program_args_equal_or_more(<int>) => <bool>
+	cpp:		argc >= {1} + 1
+	java:		args.length >= {1}
+	js:			process.argv.length >= {1} + 2
+	pl:			scalar(@ARGV) >= {1}
+	py:			len(sys.argv) >= {1} + 1
+	rs:			args.len() >= {1} + 1
+	swift:		CommandLine.arguments.count >= {1} + 1
+
+#program_args_less_than(<int>) Check for less than <int> command line arguments
+program_args_less_than(<int>) => <bool>
+	cpp:		argc < {1} + 1
+	java:		args.length < {1}
+	js:			process.argv.length < {1} + 2
+	pl:			scalar(@ARGV) < {1}
+	py:			len(sys.argv) < {1} + 1
+	rs:			args.len() < {1} + 1
+	swift:		CommandLine.arguments.count < {1} + 1
+
+#program_arg(<int>) Get program argument [1-ARGC]
+program_arg(<int>) => <string>
+	cpp:		string(argv[{1}])
+	cppU:		Utils::UTF8_to_wstring(argv[{1}])
+	cppURequire: #include "Utils.hpp"
+	java:		args[{1} - 1]
+	js:			process.argv[{1} + 1]
+	pl:			$ARGV[{1} - 1]
+	py:			sys.argv[{1}]
+	rs:			args[{1}]
+	swift:		CommandLine.arguments[{1}]
+
+# tohex(<long>)	 convert integer to hexadecimal string
+tohex(<any>) => <string>
+	cpp:		Utils::toHex<char>({1})
+	cppU:		Utils::toHex<wchar_t>({1})
+	pl:			Utils::toHex({1})
+	rs:			format!("{:x}", {1})
+	default:	Utils.toHex({1})
+
+# tohex(<char>)	 convert character to hexadecimal string
+tohex<char>(<char>) => <string>
+	cpp:		Utils::toHex<char>({1})
+	cppU:		Utils::toHex<wchar_t>({1})
+	java:		Utils.toHex({1}.codePointAt(0))
+	js:			Utils.toHex({1}.codePointAt(0))
+	pl:			Utils::toHex(ord({1}))
+	py:			Utils.toHex(ord({1}))
+	rs:			format!("{:x}", ord({1}))
+	swift:		Utils.toHex(Utils.ord({1}))
+
+# tobase(int, base) convert to specified base (2-16)
+tobase(<int>, <int>) => <string>
+	default:	Utils.toBase({1}, {2})
+	cpp:		Utils::toBase<char>({1}, {2})
+	cppU:		Utils::toBase<wchar_t>({1}, {2})
+	pl:			Utils::toBase({1}, {2})
+	swift:		Utils.toBase({1}, base: {2})
+
+# frombase(string, base) convert from the specified base (2-16)
+frombase(<string>, <int>) => <long>
+	default:	Utils.fromBase({1}, {2})
+	cpp:		Utils::fromBase<long>({1}, {2})
+	pl:			Utils::fromBase({1}, {2})
+	swift:		Utils.fromBase({1}, base: {2})
+
+# padalign(string, width, align, char, prefix, prefix_front)
+padalign(<string>, <int>, <any>, <char>, <string>, <string>) => <string>
+	default:	Utils.padAlign({1}, {2}, Utils.PadAlignType.{3}, {4}, {5}, {6})
+	cpp:		Utils::padAlign({1}, {2}, Utils::PadAlignType::{3}, {4}, {5}, {6})
+	pl:			Utils::padAlign({1}, {2}, $Utils::PadAlignType{{3}}, {4}, {5}, {6})
+	swift:		Utils.padAlign({1}, {2}, align: Utils.PadAlignType.{3}, padWith: {4}, prefix: {5}, prefix_front: {6})
+padalign@5(<string>, <int>, <any>, <char>, <string>) => <string>
+	default:	Utils.padAlign({1}, {2}, Utils.PadAlignType.{3}, {4}, {5})
+	cpp:		Utils::padAlign({1}, {2}, Utils::PadAlignType::{3}, {4}, {5})
+	pl:			Utils::padAlign({1}, {2}, $Utils::PadAlignType{{3}}, {4}, {5})
+	swift:		Utils.padAlign({1}, {2}, align: Utils.PadAlignType.{3}, padWith: {4}, prefix: {5})
+padalign@4(<string>, <int>, <any>, <char>) => <string>
+	default:	Utils.padAlign({1}, {2}, Utils.PadAlignType.{3}, {4})
+	cpp:		Utils::padAlign({1}, {2}, Utils::PadAlignType::{3}, {4})
+	pl:			Utils::padAlign({1}, {2}, $Utils::PadAlignType{{3}}, {4})
+	swift:		Utils.padAlign({1}, {2}, align: Utils.PadAlignType.{3}, padWith: {4})
+padalign@3(<string>, <int>, <any>) => <string>
+	default:	Utils.padAlign({1}, {2}, Utils.PadAlignType.{3})
+	cpp:		Utils::padAlign({1}, {2}, Utils::PadAlignType::{3})
+	pl:			Utils::padAlign({1}, {2}, $Utils::PadAlignType{{3}})
+	swift:		Utils.padAlign({1}, {2}, align: Utils.PadAlignType.{3})
+padalign@2(<string>, <int>) => <string>
+	default:	Utils.padAlign({1}, {2})
+	cpp:		Utils::padAlign({1}, {2})
+	pl:			Utils::padAlign({1}, {2})
+
+# All args will be in {0}
+# simple_message_format(FormatString, varargs...)
+simple_message_format(<string>,...) => <string>
+	default:	Utils.simpleMessageFormat({0})
+	cpp:		Utils::simpleMessageFormat({0})
+	pl:			Utils::simpleMessageFormat({0})
+	rs:			format!({0})
+
+# ... will be in {-1}
+# All args will be in {0}
+# format(FormatString, varargs...)
+# deprecated.  Use built-in format()
+format(<string>,...) => <string>
+	cpp:		fmt::format({0})
+	cppRequire: #include <fmt/format.h>
+	pl:			Utils::messageFormat({0})
+	py:			{1}.format({-1})
+	rs:			format!({0})
+	default:	Utils.format({0})
+
+# All args will be in {0}
+# sprintf(FormatString, varargs...)
+sprintf(<string>,...) => <string>
+	cpp:		Utils::sprintf({0})
+	java:		String.format({0})
+	js:			sprintf({0})
+	jsRequire:	const sprintf = require('sprintf-js').sprintf;
+	pl:			sprintf({0})
+	py:			Utils.sprintf({0})
+	swift:		String(format:{0})
+
+# All args will be in {0}
+# printf(FormatString, varargs...)
+printf(<string>,...) => <string>
+	cpp:		printf({0})
+	cppU:		wprintf({0})
+	java:		System.out.printf({0})
+	js:			console.log({0})
+	pl:			printf({0})
+	py:			Utils.printf({0})
+	swift:		print(String(format:{0}))
+
+# strlen(string)
+strlen(<string>) => <int>
+	cpp:		{1}.length()
+	java:		Utils.cpLength({1})
+	js:			Utils.cpLength({1})
+	pl:			length({1})
+	py:			len({1})
+	swift:		{1}.count
+
+# char_at(string, int)	 # int for C++ and Java, otherwise string
+char_at(<string>, <int>) => <char>
+	java:		Utils.uniAt({1}, {2})
+	js:			Utils.uniAt({1}, {2})
+	pl:			substr({1}, {2}, 1)
+	swift:		Utils.substr({1}, {2}, {2} + 1)
+	default:	{1}[{2}]
+
+# codepoint_at(string, int)
+codepoint_at(<string>, <int>) => <codepoint_t>
+	cpp:		(int)({1}[{2}])
+	java:		Utils.cpAt({1}, {2})
+	js:			Utils.cpAt({1}, {2})
+	pl:			ord(substr({1}, {2}, 1))
+	py:			ord({1}[{2}])
+	rs:			{1}[{2}]
+	swift:		Utils.codepoint_at({1}, {2})
+
+# substr(string, start, end)
+substr(<string>, <int>, <int>) => <string>
+	cpp:		{1}.substr({2}, {3} - {2})
+	java:		Utils.cpSubstring({1}, {2}, {3})
+	js:			Utils.cpSubstr({1}, {2}, {3} - {2})
+	pl:			substr({1}, {2}, {3} - {2})
+	py:			{1}[{2}:{3}]
+	swift:		Utils.substr({1}, {2}, {3})
+
+# substrByLen(string, start, length)
+substrByLen(<string>, <int>, <int>) => <string>
+	cpp:		{1}.substr({2}, {3})
+	java:		Utils.cpSubstring({1}, {2}, {2} + {3})
+	js:			Utils.cpSubstr({1}, {2}, {3})
+	pl:			substr({1}, {2}, {3})
+	py:			{1}[{2}:{2} + {3}]
+	swift:		Utils.substr({1}, {2}, {2} + {3})
+
+# prefix(string, count)
+prefix(<string>, <int>) => <string>
+	cpp:		{1}.substr(0, {2})
+	java:		Utils.cpSubstring({1}, 0, {2})
+	js:			Utils.cpSubstr({1}, 0, {2})
+	pl:			substr({1}, 0, {2})
+	py:			{1}[0:{2}]
+	swift:		{1}.prefix({2})
+
+# right_tail(string, count)
+right_tail(<string>, <int>) => <string>
+	cpp:		{1}.substr({2})
+	java:		Utils.cpSubstring({1}, {2})
+	js:			Utils.cpSubstr({1}, {2})
+	pl:			substr({1}, {2})
+	py:			{1}[{2}:]
+	swift:		Utils.substr({1}, {2})
+
+# suffix(string, count)
+suffix(<string>, <int>) => <string>
+	cpp:		{1}.substr({1}.length() - {2})
+	java:		Utils.cpSubstring({1}, Utils.cpLength({1}) - {2})
+	js:			Utils.cpSubstr({1}, Utils.cpLength({1}) - {2})
+	pl:			substr({1}, -{2})
+	py:			{1}[len({1}) - {2}:]
+	swift:		{1}.suffix({2})
+#	swift:		Utils.substr({1}, {1}.count - {2})
+
+# Find first occurrence of string
+# find(string, search)	Return STRING_NOT_FOUND if not found
+find<string><codepoint_t>(<string>, <codepoint_t>) => <int>
+	cpp:		{1}.find({2})
+	java:		Utils.cpIndexOf({1}, {2})
+	js:			Utils.cpIndexOf({1}, {2})
+	pl:			index({1}, chr({2}))
+	py:			{1}.find(chr({2}))
+	swift:		{1}.indexOf(Utils.chr({2}))
+
+# Find last occurrence of string
+# rfind(string, search)	 Return STRING_NOT_FOUND if not found
+rfind<string><codepoint_t>(<string>, <codepoint_t>) => <int>
+	cpp:		{1}.rfind({2})
+	java:		Utils.cpLastIndexOf({1}, {2})
+	js:			Utils.cpLastIndexOf({1}, {2})
+	pl:			rindex({1}, chr({2}))
+	py:			{1}.rfind(chr({2}))
+	swift:		{1}.lastIndexOf(Utils.chr({2}))
+
+# Find first occurrence of string
+# find(string, search)	Return STRING_NOT_FOUND if not found
+find(<string>, <string>) => <int>
+	cpp:		{1}.find({2})
+	java:		Utils.cpIndexOf({1}, {2})
+	js:			Utils.cpIndexOf({1}, {2})
+	pl:			index({1}, {2})
+	py:			{1}.find({2})
+	swift:		{1}.indexOf({2})
+
+# Find last occurrence of string
+# rfind(string, search)	 Return STRING_NOT_FOUND if not found
+rfind(<string>, <string>) => <int>
+	cpp:		{1}.rfind({2})
+	java:		Utils.cpLastIndexOf({1}, {2})
+	js:			Utils.cpLastIndexOf({1}, {2})
+	pl:			rindex({1}, {2})
+	py:			{1}.rfind({2})
+	swift:		{1}.lastIndexOf({2})
+
+# compare(string, string)	- less than, 0 equal, + greater than
+compareto(<string>, <string>) => <int>
+	cpp:		{1}.compare({2})
+	java:		{1}.compareTo({2})
+	js:			{1}.localeCompare({2})
+	pl:			{1} cmp {2}
+	py:			Utils.compareTo({1}, {2})
+	swift:		Utils.compareTo({1}, {2})
+
+# regex(string)
+#regex(<string>) => <regex>
+#	cpp:		regex({1})
+#	cppU:		wregex({1})
+#	java:		new Pattern({1})
+#	js:			{1}
+#	pl:
+#	py:			re.compile({1})
+#	swift:
+#	default:	REGEX({1})
+
+# qr/m replaces qr with m if found at beginning of match variable
+# match(string, regex)
+match(<string>, <regex>) => <bool>
+	cpp:		regex_search({1}, {2})
+	cppRequire:	#include <regex>
+	java:		{2}.matcher({1}).find()
+	javaRequire:	import java.util.regex.Pattern;
+	js:			Utils.defined({1}.match({2}))
+	pl:			{1} =~ {2}
+	plRequire:	use English;
+	py:			Utils.defined({2}.search({1}))
+	pyRequire:	import re
+	rs:			utils::regex_search({2}, {1})
+	swift:		{1}.match({2})
+
+# Regex to find first occurance in a string
+# returning an array of all groups in the match.
+# Group 0 is the entire match, Group 1.. are submatches
+# findFirst(string, regex)
+findFirst(<string>, <regex>) => [string]
+	cpp:		Utils::regex_findfirst({2}, {1})
+	cppRequire:	#include <regex>
+	java:		Utils.findFirst({2}, {1})
+	js:			Utils.match({2}, {1})
+	pl:			[{1} =~ {2}]
+	plRequire:	use English;
+	py:			Utils.findFirst({2}, {1})
+	pyRequire:	import re
+	rs:			utils::regex_find_first({2}, {1})
+	swift:		{1}.findFirst({2})
+
+# Regex to find all occurance in a string
+# returning an array of all matches.
+# Regex needs g option set for JavaScript
+# findAll(string, regex)
+findAll(<string>, <regex>) => [string]
+	cpp:		Utils::regex_findall({2}, {1})
+	cppRequire:	#include <regex>
+	java:		Utils.findAll({2}, {1})
+	js:			Utils.match({2}, {1})
+	pl:			[{1} =~ m/{2}/g]
+	plRequire:	use English;
+	py:			{2}.findall({1})
+	pyRequire:	import re
+	rs:			utils::regex_find_all({2}, {1})
+	swift:		{1}.findAll({2})
+
+# replaceFirst(string, regex, replacement)
+replaceFirst(<string>, <regex>, <string>) => <string>
+	cpp:		std::regex_replace({1}, {2}, {3}, regex_constants::format_first_only)
+	cppRequire:	#include <regex>
+	java:		{2}.matcher({1}).replaceFirst({3})
+	js:			{1}.replace({2}, {3})
+	pl:			{1} =~ s/{2}/\{3}/r
+	py:			{2}.sub({3}, {1}, 1)
+	pyRequire:	import re
+	rs:			utils::regex_replace_first({2}, {1}, {3})
+	swift:		{1}.replaceFirst({2}, {3})
+
+# replaceAll(string, regex, replacement)
+# Regex needs g option set for JavaScript
+replaceAll(<string>, <regex>, <string>) => <string>
+	cpp:		std::regex_replace({1}, {2}, {3})
+	cppRequire:	#include <regex>
+	java:		{2}.matcher({1}).replaceAll({3})
+	js:			{1}.replaceAll({2}, {3})
+	pl:			{1} =~ s/{2}/\{3}/gr
+	py:			{2}.sub({3}, {1})
+	pyRequire:	import re
+	rs:			utils::regex_replace_all({2}, {1}, {3})
+	swift:		{1}.replaceAll({2}, {3})
+
+# split(string, regex)
+split(<string>, <regex>) => [string]
+	cpp:		Utils::split({2}, {1})
+	java:		Arrays.asList({2}.split({1}))
+	javaRequire:	import java.util.Arrays;
+	js:			{1}.split({2})
+	pl:			[split({2}, {1})]
+	py:			{2}.split({1})
+	pyRequire:	import re
+	rs:			utils::regex_split({2}, {1})
+#	swift:		{1}.split(separator: {2}, omittingEmptySubsequences: false).map(String.init)
+	swift:		{1}.splitRegex({2})
+
+# join(separator, list)
+join(<string>, [any]) => <string>
+	cpp:		Utils::join({1}, {2})
+	
+# repeat(char, count)
+repeat(<char>, <int>) => <string>
+	cpp:		string({2}, {1})
+	cppU:		wstring({2}, {1})
+	java:		{1}.repeat({2})
+	js:			{1}.repeat({2})
+	pl:			{1} x ({2})
+	py:			{1} * ({2})
+	swift:		String(repeating: {1}, count: {2})
+
+# repeat(string, count)
+repeatString(<string>, <int>) => <string>
+	cpp:		Utils::repeat({1}, {2})
+	cppU:		Utils::repeat({1}, {2})
+	java:		{1}.repeat({2})
+	js:			{1}.repeat({2})
+	pl:			{1} x ({2})
+	py:			{1} * ({2})
+	swift:		String(repeating: {1}, count: {2})
+
+# binmode(filehandle)
+binmode(<any>) => void
+	pl:		binmode({1})
+	default:
+
+# utf8mode(filehandle)
+utf8mode(<any>) => void
+	cpp:	{1}.imbue(utf8loc)
+	pl:		binmode({1}, ":utf8")
+	default:
+
+# getbyte(<getbyte_t>?)
+# Takes an <getbyte_t> variable to set and returns FALSE if end of file or error
+# Python and Swift loops must be as follows:
+#	ScalarDecl: <getbyte_t>? c
+#	BeginFor: getbyte(<c>); <c> != EOF; getbyte(<c>)
+#		...
+#	EndFor
+#
+# whereas for Rust
+#	ScalarDecl: <getbyte_t>? c
+#	Statement: getbyte(c, ifh)
+#	BeginWhile: c != None
+#		PrintLine: c!
+#		Statement: getbyte(c, ifh)
+#	EndWhile
+#
+# whereas other languages loops are simply
+#	ScalarDecl: <getbyte_t> c
+#	BeginWhile: getbyte(<c>)
+#		...
+#	EndWhile
+#
+# Must set BINMODE for Perl to read bytes not characters
+# Statement: binmode(STDIN)
+getbyte(<getbyte_t>?) => <bool>
+	cpp:	Utils::getbytes(!STDIN!, {1})
+	java:	({1} = Utils.getbyte(!STDIN!)) != -1
+	js:		({1} = await Utils.getbyte(!STDIN!)) != -1
+	pl:		defined({1} = Utils::getbyte(*!STDIN!))
+	py:		{1} = Utils.getbyte(!STDIN!)
+	rs:		{1} = utils::get_byte(&mut !STDIN!)
+	swift:	{1} = Utils.getbyte(!STDIN!)
+
+getbyte@2(<getbyte_t>?, <ifilehandleBinary>) => <bool>
+	cpp:	Utils::getbytes({2}, {1})
+	java:	({1} = Utils.getbyte({2})) != -1
+	js:		({1} = Utils.getbyteSync({2})) != -1
+	pl:		defined({1} = Utils::getbyte(*{2}))
+	py:		{1} = Utils.getbyte({2})
+	rs:		{1} = utils::get_byte(&mut {2})
+	swift:	{1} = Utils.getbyte({2})
+
+getbyteNoCheck(<getbyte_t>?, <ifilehandleBinary>) => void
+	cpp:	Utils::getbytes({2}, {1})
+	java:	{1} = Utils.getbyte({2})
+	js:		{1} = await Utils.getbyte({2})
+	pl:		{1} = Utils::getbyte(*{2})
+	py:		{1} = Utils.getbyte({2})
+	rs:		{1} = utils::get_byte(&mut {2})
+	swift:	{1} = Utils.getbyte({2})
+
+# getcodepoint(<codepoint_t>?)
+# Takes an <codepoint_t> variable to set and returns FALSE if 
+# end of file or error.
+# Python and Swift loops must be as follows:
+#	BeginFor: getcodepoint(<c>); <c> != EOF; getcodepoint(<c>)
+#		...
+#	EndFor
+#
+# Rust loops must be as follows:
+#	Statement: getcodepoint(c, ifh)
+#	BeginWhile: c != EOF
+#		...
+#		Statement: getcodepoint(c, ifh)
+#	EndWhile
+#
+# whereas other languages loops are simply
+#	BeginWhile: getcodepoint(<c>)
+#		...
+#	EndWhile
+getcodepoint(<codepoint_t>?) => <bool>
+	cpp:		({1} = getchar()) != !EOF!
+	cppU:		({1} = getwchar()) != !EOF!
+	cppURequire:	#include <wchar.h>
+	java:		({1} = Utils.getchar()) != !EOF!
+#	java:		System.console().reader().read()
+	js:			({1} = await Utils.getchar(!STDIN!)) !== !EOF!
+# pl returns undef on EOF
+	pl:			defined({1} = Utils::getchar(*!STDIN!))
+	py:			{1} = Utils.getchar(!STDIN!)
+#	py:			{1} = readchar()
+#	pyRequire:	import readchar
+	rs:			{1} = utils::get_codepoint(!STDIN!)
+# Compare to EOF for end of file
+	swift:		{1} = Utils.getchar()
+
+getcodepoint@2(<codepoint_t>?, <ifilehandle>) => <bool>
+	cpp:		({1} = {2}.get()) != !EOF!
+	java:		({1} = {2}.read()) != !EOF!
+#	java:		System.console().reader().read()
+	js:			({1} = await Utils.getchar({2})) !== !EOF!
+# pl returns undef on EOF
+	pl:			defined({1} = Utils::getchar(*{2}))
+	py:			{1} = Utils.getchar({2})
+#	py:			{1} = readchar()
+#	pyRecuire:	import readchar
+	rs:			{1} = utils::get_codepoint(&mut {2})
+# Compare to EOF for end of file
+	swift:		{1} = {2}.getCodepoint()
+
+# getline(<string>?)
+# Takes an <string> variable to set and returns FALSE if 
+# end of file or error.
+# Python and Swift loops must be as follows:
+#	ScalarDecl: <string>? line
+#	BeginFor: getline(<s>); <s> != EOF; getline(<s>)
+#		...
+#	EndFor
+#
+# whereas for Rust
+#	ScalarDecl: <string> line = ""
+#	BeginWhile: getline(line, ifh)?
+#		Assign: line = line.trim_end().to_string()
+#		...
+#		Statement: line.clear()
+#	EndWhile
+#
+# whereas other languages loops are simply
+#	ScalarDecl: <string> line
+#	BeginWhile: getline(<s>)
+#		...
+#	EndWhile
+
+getline(<string>) => <bool>
+	cpp:		getline(!STDIN!, {1})
+	cppU:		getline(wcin, {1})
+	java:		({1} = Utils.getline()) != !NULL!
+# npm install readline-sync
+#	jsRequire:	const readlineSync = require('readline-sync');
+#	js:			{1} = readlineSync.question('')
+	js:			({1} = await Utils.getline(!STDIN!)) !== !EOF!
+# pl keeps newline
+	pl:			{1} = <!STDIN!>
+	py:			{1} = Utils.getline(!STDIN!)
+	rs:			!STDIN!.read_line(&mut {1}).unwrap_or(0) != 0
+	rsRequire:	use std::io::{BufRead};
+# returns optional
+	swift:		{1} = (readLine(strippingNewline: !TRUE!))
+
+getline@2(<string>, <ifilehandle>) => <bool>
+	cpp:		getline({2}, {1})
+	java:		({1} = {2}.readLine()) != !NULL!
+# npm install readline-sync
+#	jsRequire:	const readlineSync = require('readline-sync');
+#	js:			{1} = readlineSync.question('')
+	js:			({1} = await Utils.getline({2})) !== !EOF!
+# pl keeps newline
+	pl:			{1} = <{2}>
+	py:			{1} = Utils.getline({2})
+	rs:			{2}.read_line(&mut {1}).unwrap_or(0) != 0
+	rsRequire:	use std::io::{BufRead};
+# returns optional
+	swift:		{1} = {2}.getLine()
+
+# putbyte(<byte>)
+putbyte(<byte>) => void
+	cpp:		!STDOUT!.put({1})
+	java:		!STDOUT!.write({1})
+	js:			!STDOUT!.write(Buffer.from([{1}]))
+	pl:			print chr({1})
+	py:			!STDOUT!.buffer.write({1}.to_bytes(1, byteorder='big', signed=False))
+	rs:			!STDOUT!.write(&[{1}])?
+	swift:		!STDOUT!.write(Data([{1}]))
+
+# putchar(<char>)
+putchar(<char>) => void
+	cpp:		putchar({1})
+	cppU:		putwchar({1})
+	java:		!STDOUT!.print({1})
+	js:			!STDOUT!.write({1})
+	pl:			print {1}
+	py:			print({1}, end="")
+	rs:			println!("{}", {1})
+	swift:		print({1}, terminator: "")
+
+# putbyte@2(<byte>, <ofilehandleBinary>)
+putbyte@2(<byte>, <ofilehandleBinary>) => void
+	cpp:		{2}.put({1})
+	java:		{2}.write({1})
+	js:			Utils.putbyteSync({1}, {2})
+	pl:			print {2} chr({1})
+	py:			{2}.write({1}.to_bytes(1, byteorder='big', signed=False))
+	rs:			{2}.write_all(&[{1}])?
+	rsRequire:	use std::io::{Write};
+#	swift:		{2}.write(Data([{1}]))
+	swift:		{2}.write(Data([UInt8({1})]))
+
+# putchar@2(<char>, <ofilehandle>)
+putchar@2(<char>, <ofilehandle>) => void
+	cpp:		{2}.put({1})
+	cppU:		{2}.put({1})
+	java:		{2}.write({1})
+	js:			{2}.write({1})
+	pl:			print {2} {1}
+	py:			print({1}, file={2}, end="")
+	rs:			write!({2}, "{}", {1})?
+	rsRequire:	use std::io::{Write};
+#	swift:		{2}.print({1}, terminator: "")
+#	swift:		{1}.write(to: {2}, atomically: !TRUE!, encoding: String.Encoding.utf8)
+#	swift: 		{2}.write(contentsOf: {1})
+	swift:		{2}.write({1}.data(using: .utf8)!)
+
+# putcodepoint(<codepoint_t>)
+putcodepoint(<codepoint_t>) => void
+	cpp:		putchar({1})
+	cppU:		putwchar({1})
+	java:		!STDOUT!.print(String.valueOf(Character.toChars({1})))
+	js:			!STDOUT!.write(String.fromCodePoint({1}))
+	pl:			print chr({1})
+	py:			print(chr({1}), end="")
+	rs:			utils::put_codepoint(&mut !STDOUT!, {1})
+	swift:		print(Utils.chr({1}), terminator: "")
+
+# putcodepoint@2(<codepoint_t>, <ofilehandle>)
+putcodepoint@2(<codepoint_t>, <ofilehandle>) => void
+	cpp:		{2}.put({1})
+	cppU:		{2}.put({1})
+	java:		{2}.write({1})
+	js:			{2}.write(String.fromCodePoint({1}))
+	pl:			print {2} chr({1})
+	py:			print(chr({1}), file={2}, end="")
+	rs:			utils::put_codepoint(&mut {2}, {1})
+#	swift:		{2}.print(Utils.chr({1}), terminator: "")
+#	swift:		Utils.chr({1}).write(to: {2}, atomically: !TRUE!, encoding: String.Encoding.utf8)
+#	swift: 		{2}.write(contentsOf: Utils.chr({1}))
+	swift:		{2}.write(Utils.chr({1}).data(using: .utf8)!)
+
+# fread([any] buffer, <uint> count, <ifilehandleBinary> ifh) => <uint>
+fread([any], <uint>, <ifilehandleBinary>) => <uint>
+	cpp:		({3}.read((char*){1}.get(), {2}), {3}.gcount())
+	java:		{3}.read({1})
+	javaRequire:	import java.io.*;
+	js:			fs.readSync({3}, {1}, 0, {2})
+	jsRequire:	const fs = require('fs');
+	pl:			read({3}, {1}, {2})
+	py:			{3}.readinto({1})
+	rs:			{3}.read(&mut {1})?
+	swift:		Utils.fread(&{1}, {2}, {3}!)
+
+# fwrite([any] buffer, <uint> count, <ofilehandleBinary> ofh) => <uint>
+fwrite([any], <uint>, <ofilehandleBinary>) => <uint>
+	cpp:		{3}.write((char*){1}.get(), {2})
+	java:		{3}.write({1}, 0, {2})
+	javaRequire:	import java.io.*;
+	js:			fs.writeSync({3}, {1}, 0, {2})
+	jsRequire:	const fs = require('fs');
+	pl:			print {3} {1}
+	py:			{3}.write({1}[0:{2}])
+	rs:			{3}.write(&{1}[..{2}])?
+	swift:		try {3}!.write(contentsOf: {1}[0..<{2}])
+
+#filesize<string>(<string> filespec)
+filesize<string>(<string>) => <uint>
+	cpp:		Utils::filesize({1})
+	java:		Utils.filesize({1})
+	js:			Utils.filesize({1})
+	pl:			(stat {1})[7]
+	py:			os.path.getsize({1})
+	pyRequire:	import os.path
+	rs:			fs::metadata({1}).expect("Error getting file metadata").len() as i64
+	rsRequire:	use std::fs::{self};
+	swift:		Utils.filesize({1})
+	default:	undefined_filesize({1})
+
+#filesize<char*>(<char*> filespec)
+filesize<char*>(<char*>) => <uint>
+	rs:			fs::metadata({1}).expect("Error getting file metadata").len() as i64
+	rsRequire:	use std::fs::{self};
+
+#filesize(<any> fh)
+filesize(<any>) => <uint>
+	cpp:		Utils::filesize({1})
+	rs:			utils::filesize({1})
+	default:	undefined_filesize_any({1})
+	
+#fseek(<any> fh, <long> offset, <int> rel_pos)
+fseek(<any>, <long>, <int>) => <uint>
+	cpp:		{1}.seekg({2})
+	default:	unimplemented_fseek({1}, {2}, {3})
+	
+#ftell(<any> fh)
+ftell(<any>) => <uint>
+	cpp:		{1}.tellg()
+	default:	unimplemented_ftell({1})
+
+# print@2(<string>, <ofilehandle>)
+print@2(<string>, <ofilehandle>) => void
+	cpp:		{2} << {1}
+	cppU:		{2} << {1}
+	java:		{2}.write({1})
+	js:			{2}.write({1})
+	pl:			print {2} {1}
+	py:			print({1}, file={2}, end="")
+#	swift:		{2}.print({1}, terminator: "")
+#	swift:		{1}.write(to: {2}, atomically: !TRUE!, encoding: String.Encoding.utf8)
+	swift: 		{2}.write(contentsOf: {1})
+	swift:		{2}.write({1}.data(using: .utf8)!)
+
+# printLine@2(<string>, <ofilehandle>)
+printLine@2(<string>, <ofilehandle>) => void
+	cpp:		{2} << {1} << endl
+	cppU:		{2} << {1} << endl
+	java:		{2}.write({1});{2}.newLine()
+	js:			{2}.write({1} + "\n")
+	pl:			print {2} {1}, "\n"
+	py:			print({1}, file={2}, end="\n")
+#	swift:		{2}.print({1}, terminator: "\n")
+#	swift:		{1}.write(to: {2}, atomically: !TRUE!, encoding: String.Encoding.utf8)
+	swift: 		{2}.write(contentsOf: {1} + "\n")
+	swift:		{2}.write({1}.data(using: .utf8)!);{2}.write("\n".data(using: .utf8)!)
+
+# flush(stream)
+flush(<any>) => void
+	cpp:		{1}.flush()
+	java:		{1}.flush()
+	rs:			{1}.flush()?
+	swift:		{1}!.synchronizeFile()
+	default:	
+
+# prompt(<string>)
+prompt(<string>) => <string>
+	cpp:		Utils::prompt({1})
+	js:			await Utils.prompt({1})
+	pl:			Utils::prompt({1})
+	rs:			utils::prompt({1})
+	default:	Utils.prompt({1})
+
+# ord(<char>)
+ord(<char>) => <codepoint_t>
+	cpp:		int32_t({1})
+	java:		{1}.codePointAt(0)
+	js:			{1}.codePointAt(0)
+	pl:			ord({1})
+	py:			ord({1}[0])
+	rs:			{1} as u32
+#	swift:		{1}.unicodeScalarCodePoint()
+	swift:		Utils.ord({1})
+
+ord<char*>(<char*>) => <codepoint_t>
+	cpp:		int({1}[0])
+
+# CodePoint for first character of a string
+# ord<string>(<string>)
+ord<string>(<string>) => <codepoint_t>
+	cpp:		int({1}[0])
+	java:		{1}.codePointAt(0)
+	js:			{1}.codePointAt(0)
+	pl:			ord({1})
+	py:			ord({1}[0])
+	rs:			u32(char_at({1}, 0))
+#	swift:		{1}.unicodeScalarCodePoint()
+	swift:		Utils.ord({1})
+	
+# chr(<codepoint_t>)
+chr(<codepoint_t>) => <char>
+	cpp:		char({1})
+	cppU:		wchar_t({1})
+	java:		String.valueOf(Character.toChars({1}))
+	js:			String.fromCodePoint({1})
+	pl:			chr({1})
+	py:			chr({1})
+	rs:			char::from_u32({1})
+	swift:		Utils.chr({1})
+
+# format_char(<string>)
+format_char(<codepoint_t>) => <any>
+	rs:			{1}.to_string()
+	default:	{1}
+
+# isalpha(<char>)
+isalpha<char>(<char>) => <bool>
+	cpp:		isalpha({1})
+	cppRequire: #include <cctype>
+	cppU:		iswalpha({1})
+	cppRequire: #include <cwctype>
+	java:		Character.isLetter({1}.codePointAt(0))
+	js:			{1}.match(/^\p{Letter}/u) != null
+	pl:			{1} =~ m/^\p{Letter}/
+	py:			{1}.isalpha()
+	swift:		{1}.first!.isLetter
+
+# isalpha(<codepoint_t>)
+isalpha<codepoint_t>(<codepoint_t>) => <bool>
+	cpp:		isalpha({1})
+	cppRequire: #include <cctype>
+	cppU:		iswalpha({1})
+	cppRequire: #include <cwctype>
+	java:		Character.isLetter({1})
+	js:			String.fromCodePoint({1}).match(/^\p{Letter}/u) != null
+	pl:			chr({1}) =~ m/^\p{Letter}/
+	py:			chr({1}).isalpha()
+	swift:		Character(UnicodeScalar({1})!).isLetter
+
+# isalnum(<char>)
+isalnum<char>(<char>) => <bool>
+	cpp:		isalnum({1})
+	cppRequire: #include <cctype>
+	cppU:		iswalnum({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.isLetterOrDigit({1}.codePointAt(0))
+	js:			{1}.match(/^[\p{Letter}\p{Decimal_Number}]/u) != null
+	pl:			{1} =~ m/^[\p{Letter}\p{Decimal_Number}]/
+	py:			{1}.isalpha() or {1}.isdigit()
+	swift:		{1}.first!.isLetter || {1}.first!.isWholeNumber
+
+# isalnum(<codepoint_t>)
+isalnum<codepoint_t>(<codepoint_t>) => <bool>
+	cpp:		isalnum({1})
+	cppRequire: #include <cctype>
+	cppU:		iswalnum({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.isLetterOrDigit({1})
+	js:			String.fromCodePoint({1}).match(/^[\p{Letter}\p{Decimal_Number}]/u) != null
+	pl:			chr({1}) =~ m/^[\p{Letter}\p{Decimal_Number}]/
+	py:			chr({1}).isalpha() or chr({1}).isdigit()
+	swift:		Character(UnicodeScalar({1})!).isLetter || Character(UnicodeScalar({1})!).isWholeNumber
+
+# isctrl(<char>)
+isctrl<char>(<char>) => <bool>
+	cpp:		iscntrl({1})
+	cppRequire: #include <cctype>
+	cppU:		iswcntrl({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.isISOControl({1}.codePointAt(0))
+	js:			{1}.match(/^\p{Control}/u) != null
+	pl:			{1} =~ m/^\p{Control}/
+	py:			re.match("^[\x00-\x1f\x7f\u0080-\u009f]",{1})
+	pyRequire:	import re
+	swift:		CharacterSet.controlCharacters.contains({1}.unicodeScalars.first!)
+
+# isctrl(<codepoint_t>)
+isctrl<codepoint_t>(<codepoint_t>) => <bool>
+	cpp:		iscntrl({1})
+	cppRequire: #include <cctype>
+	cppU:		iswcntrl({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.isISOControl({1})
+	js:			String.fromCodePoint({1}).match(/^\p{Control}/u) != null
+	pl:			chr({1}) =~ m/^\p{Control}/
+	py:			re.match("^[\x00-\x1f\x7f\u0080-\u009f]",chr({1}))
+	pyRequire:	import re
+	swift:		CharacterSet.controlCharacters.contains(UnicodeScalar({1})!)
+
+# isdigit(<char>)
+isdigit<char>(<char>) => <bool>
+	cpp:		isdigit({1})
+	cppRequire: #include <cctype>
+	cppU:		iswdigit({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.isDigit({1}.codePointAt(0))
+	js:			{1}.match(/^\p{Decimal_Number}/u) != null
+	pl:			{1} =~ m/^\p{Decimal_Number}/
+	py:			{1}.isdigit()
+	swift:		{1}.first!.isWholeNumber
+
+# isdigit(<codepoint_t>)
+isdigit<codepoint_t>(<codepoint_t>) => <bool>
+	cpp:		isdigit({1})
+	cppRequire: #include <cctype>
+	cppU:		iswdigit({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.isDigit({1})
+	js:			String.fromCodePoint({1}).match(/^\p{Decimal_Number}/u) != null
+	pl:			chr({1}) =~ m/^\p{Decimal_Number}/
+	py:			chr({1}).isdigit()
+	swift:		Character(UnicodeScalar({1})!).isWholeNumber
+
+# ispunct(<char>)
+ispunct<char>(<char>) => <bool>
+	cpp:		ispunct({1})
+	cppRequire: #include <cctype>
+	cppU:		iswpunct({1})
+	cppURequire:	#include <cwctype>
+	java:		(!Character.isLetterOrDigit({1}.codePointAt(0)) && !Character.isWhitespace({1}.codePointAt(0))	&& !Character.isISOControl({1}.codePointAt(0))) 
+	js:			{1}.match(/^\p{P}/u) != null
+	pl:			{1} =~ m/^\p{P}/
+	py:			(not {1}.isalpha() and not {1}.isdigit() and not {1}.isspace() and not re.match("^[\x00-\x1f\x7f\u0080-\u009f]",{1}))
+	swift:		{1}.first!.isPunctuation
+
+# ispunct(<codepoint_t>)
+ispunct<codepoint_t>(<codepoint_t>) => <bool>
+	cpp:		ispunct({1})
+	cppRequire: #include <cctype>
+	cppU:		iswpunct({1})
+	cppURequire:	#include <cwctype>
+	java:		(!Character.isLetterOrDigit({1}) && !Character.isWhitespace({1})  && !Character.isISOControl({1})) 
+	js:			String.fromCodePoint({1}).match(/^\p{P}/u) != null
+	pl:			chr({1}) =~ m/^\p{P}/
+	py:			(not chr({1}).isalpha() and not chr({1}).isdigit() and not chr({1}).isspace() and not re.match("^[\x00-\x1f\x7f\u0080-\u009f]",chr({1})))
+	swift:		Character(UnicodeScalar({1})!).isPunctuation
+
+# isspace(<char>)
+isspace<char>(<char>) => <bool>
+	cpp:		isspace({1})
+	cppRequire: #include <cctype>
+	cppU:		iswspace({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.isWhitespace({1}.codePointAt(0))
+	js:			{1}.match(/^\p{White_Space}/u) != null
+	pl:			{1} =~ m/^\p{White Space}/
+	py:			{1}.isspace()
+	swift:		{1}.first!.isWhitespace
+
+# isspace(<codepoint_t>)
+isspace<codepoint_t>(<codepoint_t>) => <bool>
+	cpp:		isspace({1})
+	cppRequire: #include <cctype>
+	cppU:		iswspace({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.isWhitespace({1})
+	js:			String.fromCodePoint({1}).match(/^\p{White_Space}/u) != null
+	pl:			chr({1}) =~ m/^\p{White Space}/
+	py:			chr({1}).isspace()
+	swift:		Character(UnicodeScalar({1})!).isWhitespace
+
+# isupper(<char>)
+isupper<char>(<char>) => <bool>
+	cpp:		isupper({1})
+	cppRequire: #include <cctype>
+	cppU:		iswupper({1})
+	cppRequire: #include <cwctype>
+	java:		Character.isUpperCase({1}.codePointAt(0))
+	js:			{1}.match(/^\p{Upper}/u) != null
+	pl:			{1} =~ m/^\p{Upper}/
+	py:			{1}.isupper()
+	swift:		{1}.first!.isUppercase
+
+# isupper(<codepoint_t>)
+isupper<codepoint_t>(<codepoint_t>) => <bool>
+	cpp:		isupper({1})
+	cppRequire: #include <cctype>
+	cppU:		iswupper({1})
+	cppRequire: #include <cwctype>
+	java:		Character.isUpperCase({1})
+	js:			String.fromCodePoint({1}).match(/^\p{Upper}/u) != null
+	pl:			chr({1}) =~ m/^\p{Upper}/
+	py:			chr({1}).isupper()
+	swift:		Character(UnicodeScalar({1})!).isUppercase
+
+# islower(<char>)
+islower<char>(<char>) => <bool>
+	cpp:		islower({1})
+	cppRequire: #include <cctype>
+	cppU:		iswlower({1})
+	cppRequire: #include <cwctype>
+	java:		Character.isLowerCase({1}.codePointAt(0))
+	js:			{1}.match(/^\p{Lower}/u) != null
+	pl:			{1} =~ m/^\p{Lower}/
+	py:			{1}.islower()
+	swift:		{1}.first!.isLowercase
+
+# islower(<codepoint_t>)
+islower<codepoint_t>(<codepoint_t>) => <bool>
+	cpp:		islower({1})
+	cppRequire: #include <cctype>
+	cppU:		iswlower({1})
+	cppRequire: #include <cwctype>
+	java:		Character.isLowerCase({1})
+	js:			String.fromCodePoint({1}).match(/^\p{Lower}/u) != null
+	pl:			chr({1}) =~ m/^\p{Lower}/
+	py:			chr({1}).islower()
+	swift:		Character(UnicodeScalar({1})!).isLowercase
+
+# toupper(<char>)
+toupper<char>(<char>) => <char>
+	cpp:		(char)toupper({1})
+	cppRequire: #include <cctype>
+	cppU:		(wchar_t)towupper({1})
+	cppURequire:	#include <cwctype>
+	java:		{1}.toUpperCase()
+	js:			{1}.toUpperCase()
+	pl:			uc({1})
+	py:			{1}.upper()
+	swift:		{1}.uppercased()
+
+# toupper(<codepoint_t>)
+toupper<codepoint_t>(<codepoint_t>) => <codepoint_t>
+	cpp:		toupper({1})
+	cppRequire: #include <cctype>
+	cppU:		towupper({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.toUpperCase({1})
+	js:			String.fromCodePoint({1}).toUpperCase().codePointAt(0)
+	pl:			ord(uc(chr({1})))
+	py:			ord(chr({1}).upper()[0])
+	swift:		Utils.ord(Utils.chr({1}).uppercased())
+
+# toupper(<string>)
+toupper<string>(<string>) => <string>
+	cpp:		Utils::toupper({1})
+	java:		{1}.toUpperCase()
+	js:			{1}.toUpperCase()
+	pl:			uc({1})
+	py:			{1}.upper()
+	swift:		{1}.uppercased()
+
+# tolower(<char>)
+tolower<char>(<char>) => <char>
+	cpp:		(char)tolower({1})
+	cppRequire: #include <cctype>
+	cppU:		(wchar_t)towlower({1})
+	cppURequire:	#include <cwctype>
+	java:		{1}.toLowerCase()
+	js:			{1}.toLowerCase()
+	pl:			lc({1})
+	py:			{1}.lower()
+	swift:		{1}.lowercased()
+
+# tolower(<codepoint_t>)
+tolower<codepoint_t>(<codepoint_t>) => <codepoint_t>
+	cpp:		tolower({1})
+	cppRequire: #include <cctype>
+	cppU:		towlower({1})
+	cppURequire:	#include <cwctype>
+	java:		Character.toLowerCase({1})
+	js:			String.fromCodePoint({1}).toLowerCase().codePointAt(0)
+	pl:			ord(lc(chr({1})))
+	py:			ord(chr({1}).lower()[0])
+	swift:		Utils.ord(Utils.chr({1}).lowercased())
+
+# tolower(<string>)
+tolower<string>(<string>) => <string>
+	cpp:		Utils::tolower({1})
+	java:		{1}.toLowerCase()
+	js:			{1}.toLowerCase()
+	pl:			lc({1})
+	py:			{1}.lower()
+	swift:		{1}.lowercased()
+
+# stoi(<string>) throws number_format_exception
+stoi(<string>) => <int32>
+	cpp:		stoi({1})
+	java:		Integer.parseInt({1})
+	js:			Utils.stoi({1})
+	pl:			Utils::stoi({1})
+	py:			int({1})
+	rs:			{1}.trim().parse::<i32>()
+	swift:		Utils.stoi({1})
+
+# stol(<string>) throws number_format_exception
+stol(<string>) => <int64>
+	cpp:		stol({1})
+	java:		Long.parseLong({1})
+	js:			Utils.stoi({1})
+	pl:			Utils::stoi({1})
+	py:			int({1})
+	rs:			{1}.trim().parse::<i64>()
+	swift:		Utils.stol({1})
+
+# stod(<string>) throws number_format_exception
+stod(<string>) => <double>
+	cpp:		stod({1})
+	java:		Double.parseDouble({1})
+	js:			Utils.stod({1})
+	pl:			Utils::stod({1})
+	py:			float({1})
+	rs:			{1}.trim().parse::<f64>()
+	swift:		Utils.stod({1})
+
+# stoi_w_default(<string>, <int>)
+stoi_w_default(<string>, <int>) => <int>
+	cpp:		Utils::stoiWithDefault({1}, {2})
+	pl:			Utils::stoiWithDefault({1}, {2})
+	rs:			{1}.trim().parse::<i32>().unwrap_or({2})
+	swift:		Int32({1}) ?? {2}
+	default:	Utils.stoiWithDefault({1}, {2})
+
+# stol_w_default(<string>, <long>)
+stol_w_default(<string>, <long>) => <long>
+	cpp:		Utils::stolWithDefault({1}, {2})
+	java:		Utils.stolWithDefault({1}, {2})
+	pl:			Utils::stoiWithDefault({1}, {2})
+	rs:			{1}.trim().parse::<i64>().unwrap_or({2})
+	swift:		Int64({1}) ?? {2}
+	default:	Utils.stoiWithDefault({1}, {2})
+
+# stod_w_default(<string>, <double>)
+stod_w_default(<string>, <double>) => <double>
+	cpp:		Utils::stodWithDefault({1}, {2})
+	pl:			Utils::stodWithDefault({1}, {2})
+	rs:			{1}.trim().parse::<f64>().unwrap_or({2})
+	swift:		Double({1}) ?? {2}
+	default:	Utils.stodWithDefault({1}, {2})
+
+# ltrim(<string>)
+ltrim(<string>) => <string>
+	cpp:		Utils::ltrim({1})
+	pl:			Utils::ltrim({1})
+	py:			{1}.lstrip()
+	default:	Utils.ltrim({1})
+
+# rtrim(<string>)
+rtrim(<string>) => <string>
+	cpp:		Utils::rtrim({1})
+	pl:			Utils::rtrim({1})
+	py:			{1}.rstrip()
+	default:	Utils.rtrim({1})
+
+# trim(<string>)
+trim(<string>) => <string>
+	cpp:		Utils::trim({1})
+	pl:			Utils::trim({1})
+	py:			{1}.strip()
+	default:	Utils.trim({1})
+
+# isempty(<string>)
+isempty(<string>) => <bool>
+	cpp:		{1}.empty()
+	pl:			Utils::isEmpty({1})
+	default:	Utils.isEmpty({1})
+
+# isblank(<string>)
+isblank(<string>) => <bool>
+	cpp:		Utils::isBlank({1})
+	pl:			Utils::isBlank({1})
+	default:	Utils.isBlank({1})
+
+# buffer_get(<byte_buffer>, <uint>) => <byte>
+buffer_get(<byte_buffer>, <uint>) => <byte>
+	default:	{1}[{2}]
+
+# buffer_set(<byte_buffer>, <uint>, <byte>) => <byte>
+buffer_set(<byte_buffer>, <uint>, <byte>) => <byte>
+	default:	{1}[{2}] = {3}
+
+# sgn(x)
+sgn(<any>) => <int>
+	py:			(1 if ({1} > 0) else (-1 if ({1} < 0) else 0))
+	default:	(({1} > 0) ? 1 : (({1} < 0) ? -1 : 0))
+
+# abs(x)
+abs(<int>) => <int>
+	cpp:		abs({1})
+	cppRequire: #include <cmath>
+	java:		Math.abs({1})
+	js:			Math.abs({1})
+	pl:			abs({1})
+	py:			abs({1})
+	pyRequire:	import math
+	rs:			{1}.abs()
+	swift:		abs({1})
+
+# acos(x)
+acos(<double>) => <double>
+	cpp:		acos({1})
+	cppRequire: #include <cmath>
+	java:		Math.acos({1})
+	js:			Math.acos({1})
+	pl:			acos({1})
+	plRequire:	use Math::Trig qw(acos);
+	py:			math.acos({1})
+	pyRequire:	import math
+	swift:		acos({1})
+
+# acosh(<double>)
+acosh(<double>) => <double>
+	cpp:		acosh({1})
+	cppRequire: #include <cmath>
+	java:		Math.log({1} + Math.sqrt({1} * {1} - 1.0))
+	js:			Math.acosh({1})
+	pl:			acosh({1})
+	plRequire:	use Math::Trig qw(acosh);
+	py:			math.acosh({1})
+	pyRequire:	import math
+	swift:		acosh({1})
+
+# asin(x)
+asin(<double>) => <double>
+	cpp:		asin({1})
+	cppRequire: #include <cmath>
+	java:		Math.asin({1})
+	js:			Math.asin({1})
+	pl:			asin({1})
+	plRequire:	use Math::Trig qw(asin);
+	py:			math.asin({1})
+	pyRequire:	import math
+	swift:		asin({1})
+
+# asinh(x)
+asinh(<double>) => <double>
+	cpp:		asinh({1})
+	cppRequire: #include <cmath>
+	java:		Math.log({1} + Math.sqrt({1} * {1} + 1.0))
+	js:			Math.asinh({1})
+	pl:			asinh({1})
+	plRequire:	use Math::Trig qw(asinh);
+	py:			math.asinh({1})
+	pyRequire:	import math
+	swift:		asinh({1})
+
+# atan(x)
+atan(<double>) => <double>
+	cpp:		atan({1})
+	cppRequire: #include <cmath>
+	java:		Math.atan({1})
+	js:			Math.atan({1})
+	pl:			atan({1})
+	plRequire:	use Math::Trig qw(atan);
+	py:			math.atan({1})
+	pyRequire:	import math
+	swift:		atan({1})
+
+# atan2(y, x)
+atan2(<double>, <double>) => <double>
+	cpp:		atan2({1}, {2})
+	cppRequire: #include <cmath>
+	java:		Math.atan2({1}, {2})
+	js:			Math.atan2({1}, {2})
+	pl:			atan2({1}, {2})
+	plRequire:	use Math::Trig qw(atan2);
+	py:			math.atan2({1}, {2})
+	pyRequire:	import math
+	swift:		atan2({1}, {2})
+
+# atanh(x)
+atanh(<double>) => <double>
+	cpp:		atanh({1})
+	cppRequire: #include <cmath>
+	java:		0.5 * Math.log((1.0 + {1})/(1.0 - {1}))
+	js:			Math.atanh({1})
+	pl:			atanh({1})
+	plRequire:	use Math::Trig qw(atanh);
+	py:			math.atanh({1})
+	pyRequire:	import math
+	swift:		atanh({1})
+
+# ceil(x)
+ceil(<double>) => <double>
+	cpp:		ceil({1})
+	cppRequire: #include <cmath>
+	java:		Math.ceil({1})
+	js:			Math.ceil({1})
+	pl:			ceil({1})
+	plRequire:	use POSIX qw(ceil);
+	py:			math.ceil({1})
+	pyRequire:	import math
+	rs:			{1}.ceil()
+	swift:		ceil({1})
+
+# cos(x)
+cos(<double>) => <double>
+	cpp:		cos({1})
+	cppRequire: #include <cmath>
+	java:		Math.cos({1})
+	js:			Math.cos({1})
+	pl:			cos({1})
+	py:			math.cos({1})
+	pyRequire:	import math
+	swift:		cos({1})
+
+# cosh(x)
+cosh(<double>) => <double>
+	cpp:		cosh({1})
+	cppRequire: #include <cmath>
+	java:		Math.cosh({1})
+	js:			Math.cosh({1})
+	pl:			cosh({1})
+	plRequire:	use Math::Trig qw(cosh);
+	py:			math.cosh({1})
+	pyRequire:	import math
+	swift:		cosh({1})
+
+# exp(x)
+exp(<double>) => <double>
+	cpp:		exp({1})
+	cppRequire: #include <cmath>
+	java:		Math.exp({1})
+	js:			Math.exp({1})
+	pl:			exp({1})
+	py:			math.exp({1})
+	pyRequire:	import math
+	swift:		exp({1})
+
+# fabs(x)
+fabs(<double>) => <double>
+	cpp:		abs({1})
+	cppRequire: #include <cmath>
+	java:		Math.abs({1})
+	js:			Math.abs({1})
+	pl:			abs({1})
+	plRequire:	use Math::Trig qw(abs);
+	py:			abs({1})
+	pyRequire:	import math
+	swift:		fabs({1})
+
+# floor(x)
+floor(<double>) => <double>
+	cpp:		floor({1})
+	cppRequire: #include <cmath>
+	java:		Math.floor({1})
+	js:			Math.floor({1})
+	pl:			floor({1})
+	plRequire:	use POSIX qw(floor);
+	py:			math.floor({1})
+	pyRequire:	import math
+	rs:			{1}.floor()
+	swift:		floor({1})
+
+# fmax(x, y)
+fmax(<double>, <double>) => <double>
+	cpp:		max({1}, {2})
+	cppRequire: #include <algorithm>
+	java:		Math.max({1}, {2})
+	js:			Math.max({1}, {2})
+	pl:			max({1}, {2})
+	plRequire:	use List::Util qw(min max);
+	py:			max({1}, {2})
+	swift:		fmax({1}, {2})
+
+# fmin(x, y)
+fmin(<double>, <double>) => <double>
+	cpp:		min({1}, {2})
+	cppRequire: #include <algorithm>
+	java:		Math.min({1}, {2})
+	js:			Math.min({1}, {2})
+	pl:			min({1}, {2})
+	plRequire:	use List::Util qw(min max);
+	py:			min({1}, {2})
+	swift:		fmin({1}, {2})
+
+# log(x)
+log(<double>) => <double>
+	cpp:		log({1})
+	cppRequire: #include <cmath>
+	java:		Math.log({1})
+	js:			Math.log({1})
+	pl:			log({1})
+	py:			math.log({1})
+	pyRequire:	import math
+	swift:		log({1})
+
+# log10(x)
+log10(<double>) => <double>
+	cpp:		log10({1})
+	cppRequire: #include <cmath>
+	java:		Math.log10({1})
+	js:			Math.log10({1})
+	pl:			log10({1})
+	plRequire:	use POSIX qw(log10);
+	py:			math.log10({1})
+	pyRequire:	import math
+	rs:			{1}.log10()
+	swift:		log10({1})
+
+# max(x, y)
+max(<int>, <int>) => <int>
+	cpp:		max({1}, {2})
+	cppRequire: #include <algorithm>
+	java:		Math.max({1}, {2})
+	js:			Math.max({1}, {2})
+	pl:			max({1}, {2})
+	plRequire:	use List::Util qw(min max);
+	py:			max({1}, {2})
+	swift:		max({1}, {2})
+
+# min(x, y)
+min(<int>, <int>) => <int>
+	cpp:		min({1}, {2})
+	cppRequire: #include <algorithm>
+	java:		Math.min({1}, {2})
+	js:			Math.min({1}, {2})
+	pl:			min({1}, {2})
+	plRequire:	use List::Util qw(min max);
+	py:			min({1}, {2})
+	swift:		min({1}, {2})
+
+# pow(x, pow)
+pow(<double>, <double>) => <double>
+	cpp:		pow({1}, {2})
+	cppRequire: #include <cmath>
+	java:		Math.pow({1}, {2})
+	js:			Math.pow({1}, {2})
+	pl:			(({1}) ** ({2}))
+	py:			math.pow({1}, {2})
+	pyRequire:	import math
+	rs:			{1}.powf({2})
+	swift:		pow({1}, {2})
+
+# clock_millis()
+clock_millis() => <int>
+	cpp:		(clock() * 1000) / CLOCKS_PER_SEC
+	cppRequire: #include <ctime>
+	java:		System.currentTimeMillis()
+	js:			Date.now()
+	pl:			clock() * 1000
+	plRequire:	use Time::HiRes qw(clock);
+	py:			int(round(time.time() * 1000))
+	pyRequire:	import time
+	swift:		Int64(NSDate().timeIntervalSince1970 * 1000.0 + 0.5)
+
+# srand()
+srand() => void
+	cpp:		srand(time(0))
+	cppRequire: #include <ctime>
+	default:	
+	
+# irandom(x)  [0, x)
+irandom(<int>) => <int>
+	cpp:		int({1} * (rand()/(RAND_MAX + 1.0)))
+	cppRequire: #include <cmath>
+	java:		(int)({1} * Math.random())
+	js:			Math.trunc({1} * Math.random())
+	pl:			int(rand({1}))
+	py:			int({1} * random.random())
+	pyRequire:	import random
+	swift:		Int.random(in: 0..<{1})
+
+# random(x)	 [0, 1)
+random() => <double>
+	cpp:		rand()/(RAND_MAX + 1.0)
+	cppRequire: #include <cmath>
+	java:		Math.random()
+	js:			Math.random()
+	pl:			rand()
+	py:			random.random()
+	pyRequire:	import random
+	swift:		Double.random(in: 0.0 ..< 1.0)
+
+# round(x)
+round(<double>) => <double>
+	cpp:		floor({1} + 0.5)
+	cppRequire: #include <cmath>
+	java:		Math.round({1})
+	js:			Math.round({1})
+	pl:			floor({1} + 0.5)
+	plRequire:	use POSIX qw(floor);
+	py:			round({1})
+	pyRequire:	import math
+	rs:			{1}.round()
+	swift:		round({1})
+
+# sin(x)
+sin(<double>) => <double>
+	cpp:		sin({1})
+	cppRequire: #include <cmath>
+	java:		Math.sin({1})
+	js:			Math.sin({1})
+	pl:			sin({1})
+	py:			math.sin({1})
+	pyRequire:	import math
+	swift:		sin({1})
+
+# sinh(x)
+sinh(<double>) => <double>
+	cpp:		sinh({1})
+	cppRequire: #include <cmath>
+	java:		Math.sinh({1})
+	js:			Math.sinh({1})
+	pl:			sinh({1})
+	plRequire:	use Math::Trig qw(sinh);
+	py:			math.sinh({1})
+	pyRequire:	import math
+	swift:		sinh({1})
+
+# sqrt(x)
+sqrt(<double>) => <double>
+	cpp:		sqrt({1})
+	cppRequire: #include <cmath>
+	java:		Math.sqrt({1})
+	js:			Math.sqrt({1})
+	pl:			sqrt({1})
+	py:			math.sqrt({1})
+	pyRequire:	import math
+	rs:			{1}.sqrt()
+	swift:		sqrt({1})
+
+# tan(x)
+tan(<double>) => <double>
+	cpp:		tan({1})
+	cppRequire: #include <cmath>
+	java:		Math.tan({1})
+	js:			Math.tan({1})
+	pl:			tan({1})
+	plRequire:	use Math::Trig qw(tan);
+	py:			math.tan({1})
+	pyRequire:	import math
+	swift:		tan({1})
+
+# tanh(x)
+tanh(<double>) => <double>
+	cpp:		tanh({1})
+	cppRequire: #include <cmath>
+	java:		Math.tanh({1})
+	js:			Math.tanh({1})
+	pl:			tanh({1})
+	plRequire:	use Math::Trig qw(tanh);
+	py:			math.tanh({1})
+	pyRequire:	import math
+	swift:		tanh({1})
+
+# trunc(x)
+trunc(<double>) => <double>
+	cpp:		trunc({1})
+	cppRequire: #include <cmath>
+	java:		{1} < 0.0 ? Math.ceil({1}) : Math.floor({1})
+	js:			Math.trunc({1})
+	pl:			{1} < 0.0 ? ceil({1}) : floor({1})
+	plRequire:	use POSIX qw(ceil floor);
+	py:			math.trunc({1})
+	pyRequire:	import math
+	swift:		trunc({1})
+
+#list() Typecast to empty list
+list@0() => [any]
+	cpp:		{}
+	java:		new ArrayList<>()
+	javaRequire: import java.util.Arrays;
+	rs:			Vec::new()
+	default:	[]
+
+#list(...) Typecast to list
+list(...) => [any]
+	cpp:		{{0}}
+	java:		Arrays.asList({0})
+	javaRequire: import java.util.Arrays;
+	rs:			vec![{0}]
+	default:	[{0}]
+
+# isEmptyList(list)
+isEmptyList([any]) => <bool>
+	cpp:		{1}.empty()
+	java:		{1}.isEmpty()
+	js:			({1}.length == 0)
+	pl:			(scalar({1}) == 0)
+	py:			not {1}
+	rs:			{1}.is_empty()
+	swift:		{1}.isEmpty
+	
+isEmptyList[any]*([any]*) => <bool>
+	pl:			(scalar(@{1}) == 0)
+
+# listContains(list, any)
+listContains([any], <any>) => <bool>
+	cpp:		count({1}.begin(), {1}.end(), {2})
+	cppRequire: #include <algorithm>
+	java:		{1}.contains({2})
+	js:			{1}.includes({2})
+	pl:			{2} ~~ {1}
+	py:			{2} in {1}
+	rs:			{1}.contains(&{2})
+	swift:		{1}.contains({2})
+
+listContains[any]*<any>([any]*, <any>) => <bool>
+	pl:			{2} ~~ @{1}
+
+# push(list, value)
+push([any], <any>) => void
+	cpp:		Utils::push({1}, {2})
+	java:		{1}.add({2})
+	js:			{1}.push({2})
+	pl:			push({1}, {2})
+	py:			{1}.append({2})
+	rs:			{1}.push({2})
+	swift:		{1}.append({2})
+
+push[any]*<any>([any]*, <any>) => void
+	pl:			push(@{{1}}, {2})
+
+push[any]*<any>([any]*, <any>) => void
+	pl:			push(@{{1}}, {2})
+
+# pop(list)
+pop([any]) => <any>
+	cpp:		Utils::pop({1})
+	java:		{1}.remove({1}.size() - 1)
+	js:			{1}.pop()
+	pl:			pop({1})
+	py:			{1}.pop()
+	rs:			{1}.pop().unwrap()
+	swift:		{1}.removeLast()
+
+pop[any]*([any]*) => <any>
+	pl:			pop(@{{1}})
+
+# peek(list)
+peek([any]) => any
+	cpp:		Utils::peek({1})
+	java:		{1}.get({1}.size() - 1)
+	js:			{1}[{1}.length - 1]
+	pl:			$\{1}[-1]
+	py:			{1}[-1]
+	rs:			{1}.peek().unwrap()
+	swift:		{1}.last!
+
+peek[any]*([any]*) => any
+	pl:			{1}->[-1]
+
+# shift(list)
+shift([any]) => <any>
+	cpp:		Utils::shift({1})
+	java:		{1}.remove(0)
+	js:			{1}.shift()
+	pl:			shift({1})
+	py:			{1}.pop(0)
+	rs:			{1}.remove(0)
+	swift:		{1}.removeFirst()
+
+shift[any]*([any]*) => void
+	pl:			shift(@{1})
+
+# unshift(list, value)
+unshift([any], <any>) => <any>
+	cpp:		Utils::unshift({1}, {2})
+	java:		{1}.add(0, {2})
+	js:			{1}.unshift({2})
+	pl:			unshift({1}, {2})
+	py:			{1}.insert(0,{2})
+	rs:			{1}.insert(0,{2})
+	swift:		{1}.insert({2}, at: 0)
+
+unshift[any]*<any>([any]*, <any>) => <any>
+	pl:			unshift(@{1}, {2})
+
+# peek_front(list)
+peek_front([any]) => any
+	cpp:		Utils::peek_front({1})
+	java:		{1}.get(0)
+	js:			{1}[0]
+	pl:			$\{1}[0]
+	py:			{1}[0]
+	rs:			{1}.first().unwrap()
+	swift:		{1}.first!
+
+front[any]*([any]*) => any
+	pl:			{1}->[0]
+
+# front(list)
+front([any]) => any
+	cpp:		{1}.front()
+	java:		{1}.get(0)
+	js:			{1}[0]
+	pl:			$\{1}[0]
+	py:			{1}[0]
+	rs:			{1}.first().unwrap()
+	swift:		{1}.first!
+
+front[any]*([any]*) => any
+	pl:			{1}->[0]
+
+# back(list)
+back([any]) => any
+	cpp:		{1}.back()
+	java:		{1}.get({1}.size() - 1)
+	js:			{1}[{1}.length - 1]
+	pl:			$\{1}[-1]
+	py:			{1}[-1]
+	rs:			{1}.last().unwrap()
+	swift:		{1}.last!
+
+back[any]*([any]*) => any
+	pl:			{1}->[-1]
+
+# clearList(list)
+clearList([any]) => void
+	cpp:		{1}.clear()
+	java:		{1}.clear()
+	js:			{1}.length = 0
+	pl:			splice ({1})
+	py:			{1}.clear()
+	rs:			{1}.clear()
+	swift:		{1}.removeAll()
+
+clearList[any]*([any]*) => void
+	pl:			splice (@{1})
+
+#sort([any]) sort a list
+sort([any]) => [any]
+	cpp:		Utils::sort({1})
+	java:		Utils.sort({1})
+	js:			Array.from({1}).sort()
+	pl:			[sort @{1}]
+	py:			sorted({1})
+	swift:		{1}.sorted()
+
+#sortNumeric([any]) sort a list
+sortNumeric([any]) => [any]
+	cpp:		Utils::sort({1})
+	java:		Utils.sort({1})
+	js:			Array.from({1}).sort((a,b) => a-b)
+	pl:			[sort { $a <=> $b } @{1}]
+	py:			sorted({1}, key = float)
+	swift:		{1}.sorted()
+
+# boolToString(b)
+boolToString(<any>) => <string>
+	py:			("TRUE" if {1} else "FALSE")
+	rs:			if {1} {"TRUE"} else {"FALSE"}
+	default:	({1} ? "TRUE" : "FALSE")
+
+# regexToString(re)
+regexToString(<regex>) => <string>
+	java:		{1}.pattern()
+	js:			{1}.toString()
+	pl:			{1}
+	py:			{1}.pattern
+	default:	"regex"
+
+# listToString(list)
+listToString([any]) => <string>
+	cpp:		Utils::to_string({1})
+	cppU:		Utils::to_wstring({1})
+	pl:			Utils::listToString({1})
+	rs:			list_to_string!({1})
+	default:	Utils.listToString({1})
+
+listToString[any]*([any]*) => <string>
+	pl:			Utils::listToString({1})
+
+#map() Typecast to empty map	#not complete
+map@0() => {any}
+	cpp:		{}
+	java:		new HashMap<>()
+	js:			new Map()
+	pl:			{}
+	py:			{}
+	rs:			HashMap::new()
+	swift:		[:]
+
+#map(...) Typecast to map	#not complete
+map(...) => {any}
+	cpp:		{{0}}
+	java:		Utils.map(Object[][]{{0}})
+	pl:			{{0}}
+	rs:			HashMap::new({0})
+	default:	{{0}}
+
+# isEmptyMap(map)
+isEmptyMap({any}) => <bool>
+	cpp:		{1}.empty()
+	java:		{1}.isEmpty()
+	js:			Utils.isEmpty({1})
+	pl:			!scalar({1})
+	py:			not {1}
+	rs:			{1}.is_empty()
+	swift:		{1}.isEmpty
+
+isEmptyMap{any}*({any}*) => <bool>
+	pl:			!scalar(%{1})
+
+# mapContains(map, any)
+mapContains({any}, <any>) => <bool>
+	cpp:		{1}.count({2})
+	java:		{1}.containsKey({2})
+	js:			{1}.has({2})
+	pl:			exists $\{1}{{2}}
+	py:			({2} in {1}.keys())
+	rs:			{1}.contains_key({2})
+	swift:		{1}.keys.contains({2})
+
+mapContains{any}*<any>({any}*, <any>) => <bool>
+	pl:			exists {1}->{{2}}
+
+# mapRemove(map, any)
+mapRemove({any}, <any>) => void
+	cpp:		{1}.erase({2})
+	java:		{1}.remove({2})
+	js:			{1}.delete({2})
+	pl:			delete($\{1}{{2}})
+	py:			Utils.mapRemove({1}, {2})
+	rs:			{1}.remove({2})
+	swift:		{1}.removeValue(forKey: {2})
+
+mapRemove{any}*<any>({any}*, <any>) => void
+	pl:			delete({1}->{{2}})
+
+# clearMap(map)
+clearMap({any}) => void
+	pl:			{1} = ()
+	swift:		{1}.removeAll()
+	default:	{1}.clear()
+
+clearMap{any}*({any}*) => void
+	pl:			{1} = {}
+
+# mapToString(map)
+mapToString({any}) => <string>
+	cpp:		Utils::to_string({1})
+	cppU:		Utils::to_wstring({1})
+	pl:			Utils::mapToString({1})
+	rs:			map_to_string!({1})
+	default:	Utils.mapToString({1})
+
+mapToString{any}*({any}*) => <string>
+	pl:			Utils::mapToString({1})
+
+#sortedKeys([any]) sorted map keys
+sortedKeys({any}) => {any}
+	cpp:		Utils::sort(Utils::keys({1}))
+	java:		Utils.sort(List.copyOf({1}.keySet()))
+	js:			Array.from({1}.keys()).sort()
+	pl:			[sort keys({1})]
+	py:			sorted({1}.keys())
+#	py:			Utils.sortList(list({1}.keys()))
+# sort() not working in Rust
+#	rs:			{1}.keys().cloned().collect().sort()
+	rs:			{1}.keys().cloned().collect()
+	swift:		{1}.keys.sorted()
+
+sortedKeys{any}*({any}*) => {any}*
+	pl:			[sort keys(%{{1}})]
+
+#sortedNumericKeys({any}) sorted map keys
+sortedNumericKeys({any}) => {any}
+	cpp:		Utils::sort(Utils::keys({1}))
+	java:		Utils.sort(List.copyOf({1}.keySet()))
+	js:			Array.from({1}.keys()).sort((a,b) => a-b)
+	pl:			[sort { $a <=> $b } keys({1})]
+	py:			sorted({1}.keys(), key = int)
+	rs:			{1}.keys().cloned().sorted().collect()
+	swift:		{1}.keys.sorted()
+
+sortedNumericKeys{any}*({any}*) => {any}*
+	pl:			[sort { $a <=> $b } keys(%{{1}})]
+
+#tuple(...) Typecast to tuple
+tuple(...) => «any»
+	cpp:		make_tuple({0})
+	java:		Tuple.makeTuple({0})
+	js:			[{0}]
+	default:	({0})
+
+#tupleRef(...) Typecast to tuple reference
+tupleRef(...) => «any»*
+	cpp:		make_tuple({0})
+	java:		Tuple.makeTuple({0})
+	js:			[{0}]
+	pl:			[{0}]
+	default:	({0})
+
+# tupleToString(tuple)
+tupleToString(«any») => <string>
+	cpp:		Utils::to_string({1})
+	cppU:		Utils::to_wstring({1})
+	pl:			Utils::tupleToString({1})
+	rs:			tuple_to_string!({1})
+	default:	Utils.tupleToString({1})
+
+tupleToString«any»*(«any»*) => <string>
+	pl:			Utils::tupleToString({1})
+
+# enumToString(enum)
+enumToString(≤any≥) => <string>
+	cpp:		to_string({1})
+	cppU:		to_wstring({1})
+	js:			Utils.intToEnum(†{1}, {1})
+	pl:			Utils::enumToString({1})
+	py:			str({1})
+	rs:			{1}.name()
+	swift:		String(describing: {1})
+	default:	{1}
+
+# enumToInt(≤any≥)	Convert enumeration constant to integer
+enumToInt@1(≤any≥) => <int>
+	cpp:		static_cast<int>({1})
+	java:		{1}.value()
+	js:			{1}
+	pl:			{1}->ordinal
+	py:			{1}.value
+	rs:			{1}.into()
+	swift:		{1}.rawValue
+
+# enumToInt(≤any≥, any)	Convert enumeration constant to integer
+# first arg is enum value, second is enum class
+enumToInt@2(≤any≥, any) => <int>
+	cpp:		static_cast<int>({1})
+	java:		{1}.value()
+	js:			{1}
+	pl:			{1}->ordinal
+	py:			{1}.value
+	rs:			<{2} as Into<isize>>::into({1})
+	swift:		{1}.rawValue
+
+# intToEnum(≤any≥)	Convert integer to enumeration constant
+# enumname is a string
+intToEnum(<enumname>, <int>) => ≤any≥
+	cpp:		static_cast<\{1}>({2})
+	java:		\{1}.valueOf({2})
+	js:			{2}
+	pl:			\{1}->from_ordinal({2})
+	py:			\{1}({2})
+	rs:			\{1}::try_from({2}).unwrap()
+	swift:		\{1}(rawValue: {2})!
+
+# imbue UTF-8
+imbue(<filehandle>) => void
+	cppU:		{1}.imbue(utf8loc)
+
+# createFile(filename)
+createFile(<string>) => <bool>
+	swift:		FileManager.default.createFile(atPath: {1}, contents: nil)
+	default:
+
+# openFileRead(filename)
+openFileRead(<string>) => <ifstream>?
+	cpp:		ifstream(filesystem::path({1}).c_str())
+	cppRequire:	#include <fstream>
+	cppU:		wifstream(filesystem::path({1}).c_str())
+	cppURequire:	#include <fstream>
+	java:		Files.newBufferedReader(FileSystems.getDefault().getPath({1}), Charset.forName("UTF-8"))
+	javaRequire:	import java.nio.file.Files;
+	js:			fs.createReadStream({1}, "UTF-8")
+	jsRequire:	const fs = require('fs');
+	pl:			DON'T USE THIS METHOD
+	py:			open({1}, "r", encoding="utf8")
+	rs:			BufReader::new(File::open({1})?)
+	rsRequire:	use std::fs::{File};\nuse std::io::{BufReader};
+	swift:		StreamReader({1})
+
+#openFileRead@2(fh, filename)
+openFileRead@2(<ifilehandle>, <string>) => <bool>
+	pl:			open({1}, "<", {2})
+	default:	DON'T USE THIS METHOD
+
+# openBinaryFileRead(filename)
+openBinaryFileRead(<string>) => <ifstream>
+	cpp:		ifstream(filesystem::path({1}).c_str(), ios_base::binary)
+	cppRequire:	#include <fstream>
+	cppU:		ifstream(filesystem::path({1}).c_str(), ios_base::binary)
+	cppURequire:	#include <fstream>
+	java:		new BufferedInputStream(new FileInputStream({1}))
+	js:			fs.openSync({1}, 'r')
+	jsRequire:	const fs = require('fs');
+	pl:			DON'T USE THIS MACRO
+	py:			open({1}, "rb")
+	rs:			BufReader::new(File::open({1})?)
+	rsRequire:	use std::fs::{File};\nuse std::io::{BufReader};
+	swift:		FileHandle(forReadingAtPath: {1})
+
+# Still need to set binmode() for Perl
+#openBinaryFileRead@2(fh, filename)
+openBinaryFileRead@2(<ifilehandle>, <string>) => <bool>
+	pl:			open({1}, "<", {2})
+	default:	DON'T USE THIS MACRO
+
+# openFileWrite(filename)
+openFileWrite(<string>) => <ifstream>
+	cpp:		ofstream(filesystem::path({1}).c_str())
+	cppRequire:	#include <fstream>
+	cppU:		wofstream(filesystem::path({1}).c_str())
+	cppURequire:	#include <fstream>
+	java:		Files.newBufferedWriter(FileSystems.getDefault().getPath({1}), Charset.forName("UTF-8"))
+	javaRequire:	import java.nio.file.Files;
+	js:			fs.createWriteStream({1}, "UTF-8")
+	jsRequire:	const fs = require('fs');
+	pl:			DON'T USE THIS METHOD
+	py:			open({1}, "w", encoding="utf8")
+	rs:			BufWriter::new(File::create({1})?)
+	rsRequire:	use std::fs::{File};\nuse std::io::{BufWriter};
+	swift:		FileHandle(forWritingAtPath: {1})
+
+#openFileWrite@2(fh, filename)
+openFileWrite@2(<ifilehandle>, <string>) => <bool>
+	pl:			open({1}, ">", {2})
+	default:	DON'T USE THIS METHOD
+
+# openBinaryFileWrite(filename)
+openBinaryFileWrite(<string>) => <ifstream>
+	cpp:		ofstream(filesystem::path({1}).c_str(), ios_base::binary)
+	cppRequire:	#include <fstream>
+	cppU:		ofstream(filesystem::path({1}).c_str(), ios_base::binary)
+	cppURequire:	#include <fstream>
+	java:		new BufferedOutputStream(new FileOutputStream({1}))
+	js:			fs.openSync({1}, 'w')
+	jsRequire:	const fs = require('fs');
+	pl:			DON'T USE THIS MACRO
+	py:			open({1}, "wb")
+	rs:			BufWriter::new(fs::File::create({1})?)
+	rsRequire:	use std::fs::{self};\nuse std::io::{BufWriter};
+	swift:		FileHandle(forWritingAtPath: {1})
+
+# Still need to set binmode() for Perl
+#openBinaryFileWrite@2(fh, filename)
+openBinaryFileWrite@2(<ifilehandle>, <string>) => <bool>
+	pl:			open({1}, ">", {2})
+	default:	DON'T USE THIS MACRO
+
+# isGood(filehandle)
+isGood(<filehandle>) => <bool>
+	cpp:		{1}.good()
+	java:		{1}.ready()
+	js:			{1} != !NULL!
+	rs:			{1} != !NULL!
+	swift:		{1} != !NULL!
+	default:	DON'T USE THIS MACRO
+
+# isBad(filehandle)
+isBad(<filehandle>) => <bool>
+	cpp:		!{1}.good()
+	java:		!{1}.ready()
+	js:			{1} == !NULL!
+	rs:			{1} == !NULL!
+	swift:		{1} == !NULL!
+	default:	DON'T USE THIS MACRO
+
+# close(filehandle)
+close(<filehandle>) => void
+	cpp:		{1}.close()
+	java:		try {{1}.close();} catch (IOException ex) {}
+	pl:			close({1})
+	py:			{1}.close()
+	swift:		{1}!.closeFile()
+	default:	
+
+#deepCopy(<string>) => <string>
+deepCopy<string>(<string>) => <string>
+	rs:			{1}.clone()
+	default:	{1}
+
+# deepCopy([any])
+deepCopy[any]([any]) => [any]
+	java:		new ArrayList<>({1})
+	js:			Utils.deepCopy({1})
+	py:			copy.deepcopy({1})
+	pyRequire:	import copy
+	rs:			{1}.clone()
+	default:	{1}
+
+# deepCopy([any]*)
+deepCopy[any]*([any]*) => [any]*
+	pl:			Clone::clone({1})
+	plRequire:	use Clone;
+	default:	{1}
+
+# shallowCopy([any])
+shallowCopy[any]([any]) => [any]
+	js:			{1}.slice()
+	py:			{1}[:]
+	rs:			{1}[..].to_vec()
+	default:	{1}
+
+# shallowCopy([any]*)
+shallowCopy[any]*([any]*) => [any]*
+	pl:			[@{1}]
+	default:	{1}
+
+# deepCopy({any})
+deepCopy{any}({any}) => {any}
+	java:		new HashMap<>({1})
+	js:			Utils.deepCopy({1})
+	py:			copy.deepcopy({1})
+	pyRequire:	import copy
+	rs:			{1}.clone()
+	default:	{1}
+
+# deepCopy({any}*)
+deepCopy{any}*({any}*) => {any}*
+	pl:			Clone::clone({1})
+	plRequire:	use Clone;
+	default:	{1}
+
+# shallowCopy({any})
+shallowCopy{any}({any}) => {any}
+	default:	{1}
+
+# shallowCopy({any}*)
+shallowCopy{any}*({any}*) => {any}*
+	pl:			{%{1}}
+	default:	{1}
+
+# deepCopy(«any»)
+deepCopy«any»(«any») => «any»
+	js:			Utils.deepCopy({1})
+	py:			copy.deepcopy({1})
+	pyRequire:	import copy
+	rs:			{1}.clone()
+	default:	{1}
+
+# deepCopy(«any»*)
+deepCopy«any»*(«any»*) => «any»*
+	pl:			Clone::clone({1})
+	plRequire:	use Clone;
+	default:	{1}
+
+# shallowCopy(«any»)
+shallowCopy«any»(«any») => «any»
+	js:			{1}.slice()
+	py:			{1}[:]
+	rs:			{1}[..].to_vec()
+	default:	{1}
+
+# shallowCopy(«any»*)
+shallowCopy«any»*(«any»*) => «any»*
+	pl:			[@{1}]
+	default:	{1}
+
+# toOwned(string slice)
+toOwned(<char*>) => <string>
+	rs:			{1}.to_string()
+	default:	{1}
+
+# toSlice(string)
+toSlice(<string>) => <char*>
+	rs:			{1}.as_str()
+	default:	{1}
+
+# ref(<any>)
+ref(<any>) => <any>
+	rs:			&{1}
+	default:	{1}
+
+# mutref(<any>)
+mutref(<any>) => <any>
+	rs:			&mut {1}
+	default:	{1}
+
+# deref(<any>)
+deref(<any>) => <any>
+	rs:			*{1}
+	default:	{1}
+
+# unwrapRust(any)
+unwrapSwift(<any>) => <any>
+	rs:			{1}.unwrap()
+	default:	{1}
+
+# unwrap(any)
+unwrapSwift(<any>) => <any>
+	swift:		{1}!
+	default:	{1}
+
+# unwrapResult(any)
+unwrapResult(<any>) => <any>
+	rs:			{1}.unwrap()
+	default:	{1}
+
+# todo()
+todo() => void
+	rs:			todo!()
+	default:	
+
+# loadAtomic(<any>) => <any>
+loadAtomic(<any>) => <any>
+	rs: 		{1}.load(Ordering::Relaxed)
+	rsRequire:	use std::sync::atomic::{Ordering};
+	default:	{1}
+
+# storeAtomic(<any>, <any>) => old
+storeAtomic(<any>, <any>) => <any>
+	rs: 		{1}.store({2}, Ordering::Relaxed)
+	rsRequire:	use std::sync::atomic::{Ordering};
+	default:	{1} = {2}
+
+# addAtomic(<any>, <any>) => old
+addAtomic(<any>, <any>) => <any>
+	rs: 		{1}.fetch_add({2}, Ordering::Relaxed)
+	rsRequire:	use std::sync::atomic::{Ordering};
+	default:	{1} = {1} + {2}
+
+# subAtomic(<any>, <any>) => old
+subAtomic(<any>, <any>) => <any>
+	rs: 		{1}.fetch_sub({2}, Ordering::Relaxed)
+	rsRequire:	use std::sync::atomic::{Ordering};
+	default:	{1} = {1} - {2}
+
+# cmpAndSwapAtomic(<any>, old, new) => old
+cmpAndSwapAtomic(<any>, <any>, <any>) => <any>
+	rs: 		{1}.compare_and_swap({2}, {3}, Ordering::Relaxed)
+	rsRequire:	use std::sync::atomic::{Ordering};
+# this return the wrong value
+	default:	{1} = {2}
