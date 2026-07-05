@@ -55,7 +55,7 @@ A lightweight desktop IDE for the [Codegen](https://glowingcat.com) programming 
 
 ## Requirements
 
-- Java 17 or later
+- Java 21 or later
 - Maven (for building)
 
 ## Building
