@@ -13,9 +13,31 @@ public class CodegenApp {
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
     private static boolean splashShown = false;
 
-    // Path to the pureprogrammer Codegen lib directory
+    // Path to the Codegen lib directory
     private static final String CODEGEN_CLASSPATH = System.getProperty("codegen.classpath",
-        System.getProperty("user.home") + "/Desktop/Resources/pureprogrammer/Codegen/lib/*");
+        resolveLibPath());
+
+    private static String resolveLibPath() {
+        // Try to find lib/ relative to the jar/class location
+        try {
+            java.net.URL url = CodegenApp.class.getProtectionDomain().getCodeSource().getLocation();
+            java.io.File codeLoc = new java.io.File(url.toURI());
+            java.io.File baseDir;
+            if (codeLoc.isDirectory()) {
+                // Running from target/classes — go up to project root
+                baseDir = codeLoc.getParentFile().getParentFile();
+            } else {
+                // Running from a jar — lib/ is next to the jar
+                baseDir = codeLoc.getParentFile();
+            }
+            java.io.File libDir = new java.io.File(baseDir, "lib");
+            if (libDir.isDirectory()) return libDir.getAbsolutePath() + "/*";
+        } catch (Exception ignored) {}
+        // Fallback: try current working directory
+        java.io.File cwdLib = new java.io.File("lib");
+        if (cwdLib.isDirectory()) return cwdLib.getAbsolutePath() + "/*";
+        return "lib/*";
+    }
 
     private JFrame frame;
     private RSyntaxTextArea codeEditor;
@@ -40,6 +62,8 @@ public class CodegenApp {
     private volatile Thread runThread;
     private AIChatPanel aiChatPanel;
     private JSplitPane aiSplit;
+    private PreviewPanel previewPanel;
+    private JSplitPane editorPreviewSplit;
 
     public static void main(String[] args) {
         if (!IS_WINDOWS && !IS_MAC) {
@@ -81,6 +105,7 @@ public class CodegenApp {
         // Restore divider positions after frame is visible and laid out
         SwingUtilities.invokeLater(() -> {
             if (settings.mainDivider > 0) mainSplit.setDividerLocation(settings.mainDivider);
+            if (settings.editorPreviewDivider > 0) editorPreviewSplit.setDividerLocation(settings.editorPreviewDivider);
             if (settings.aiVisible && settings.aiDivider > 0) aiSplit.setDividerLocation(settings.aiDivider);
             // Show splash screen on startup if not licensed
             if (!splashShown && !LicenseDialog.isLicensed(settings)) {
@@ -106,6 +131,7 @@ public class CodegenApp {
         scheme.getStyle(Token.FUNCTION).font = font.deriveFont(Font.BOLD);
         scheme.getStyle(Token.COMMENT_EOL).foreground = settings.colors[3];
         scheme.getStyle(Token.COMMENT_MULTILINE).foreground = settings.colors[3];
+        scheme.getStyle(Token.COMMENT_DOCUMENTATION).foreground = settings.colors[3];
         scheme.getStyle(Token.LITERAL_STRING_DOUBLE_QUOTE).foreground = settings.colors[4];
         scheme.getStyle(Token.LITERAL_CHAR).foreground = settings.colors[4];
         scheme.getStyle(Token.LITERAL_NUMBER_DECIMAL_INT).foreground = settings.colors[5];
@@ -119,6 +145,7 @@ public class CodegenApp {
         codeEditor.revalidate();
         codeEditor.repaint();
         if (aiChatPanel != null) aiChatPanel.updateFont();
+        if (previewPanel != null) previewPanel.setEditorFont(font);
     }
 
     private JMenuBar createMenuBar() {
@@ -263,11 +290,14 @@ public class CodegenApp {
         genPython.addActionListener(e -> generateLanguage("py"));
         JMenuItem genSwift = new JMenuItem("Swift");
         genSwift.addActionListener(e -> generateLanguage("swift"));
+        JMenuItem genRust = new JMenuItem("Rust");
+        genRust.addActionListener(e -> generateLanguage("rs"));
         generateMenu.add(genCpp);
         generateMenu.add(genJava);
         generateMenu.add(genJs);
         generateMenu.add(genPerl);
         generateMenu.add(genPython);
+        generateMenu.add(genRust);
         generateMenu.add(genSwift);
         generateMenu.addSeparator();
         JMenuItem genAll = new JMenuItem("Generate All");
@@ -288,18 +318,21 @@ public class CodegenApp {
         runPython.addActionListener(e -> runLanguage("py"));
         JMenuItem runSwift = new JMenuItem("Swift");
         runSwift.addActionListener(e -> runLanguage("swift"));
+        JMenuItem runRust = new JMenuItem("Rust");
+        runRust.addActionListener(e -> runLanguage("rs"));
         runMenu.add(runCpp);
         runMenu.add(runJava);
         runMenu.add(runJs);
         runMenu.add(runPerl);
         runMenu.add(runPython);
+        runMenu.add(runRust);
         runMenu.add(runSwift);
 
         // Help menu
         JMenu helpMenu = new JMenu("Help");
         JMenuItem onlineDocsItem = new JMenuItem("Online Documentation");
         onlineDocsItem.addActionListener(e -> {
-            try { Desktop.getDesktop().browse(new java.net.URI("https://pureprogrammer.org/")); }
+            try { Desktop.getDesktop().browse(new java.net.URI("https://glowingcat.com/")); }
             catch (Exception ex) { ex.printStackTrace(); }
         });
         helpMenu.add(onlineDocsItem);
@@ -381,7 +414,13 @@ public class CodegenApp {
         consolePanel.add(consoleToolBar, BorderLayout.NORTH);
         consolePanel.add(consoleScrollPanel, BorderLayout.CENTER);
 
-        mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorPanel, consolePanel);
+        // Preview panel (right of editor, above console)
+        previewPanel = new PreviewPanel();
+        previewPanel.synchronizeScrolling(editorPanel.getScrollPane());
+        editorPreviewSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editorPanel, previewPanel);
+        editorPreviewSplit.setResizeWeight(0.5);
+
+        mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorPreviewSplit, consolePanel);
         mainSplit.setResizeWeight(0.7);
 
         // AI Chat panel (right side)
@@ -445,6 +484,7 @@ public class CodegenApp {
             modified = false;
             saveItem.setEnabled(false);
             updateUndoRedo();
+            previewPanel.setSourceFile(currentFile);
         } catch (IOException e) {
             appendConsole("Error opening file: " + e.getMessage() + "\n");
         }
@@ -527,8 +567,12 @@ public class CodegenApp {
                 }
                 int exitCode = proc.waitFor();
                 SwingUtilities.invokeLater(() -> {
-                    if (exitCode == 0) appendConsole("> Generation complete: " + baseName + ext + "\n");
-                    else appendConsole("> Generation failed (exit code " + exitCode + ")\n");
+                    if (exitCode == 0) {
+                        appendConsole("> Generation complete: " + baseName + ext + "\n");
+                        previewPanel.refreshPreview();
+                    } else {
+                        appendConsole("> Generation failed (exit code " + exitCode + ")\n");
+                    }
                 });
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> appendConsole("Error: " + ex.getMessage() + "\n"));
@@ -548,7 +592,7 @@ public class CodegenApp {
         appendConsole("> Generating all languages from " + currentFile.getFileName() + "...\n");
 
         new Thread(() -> {
-            String[] langs = {"cpp", "java", "js", "pl", "py", "swift"};
+            String[] langs = {"cpp", "java", "js", "pl", "py", "rs", "swift"};
             for (String lang : langs) {
                 String visitorClass = getVisitorClass(lang);
                 String srcPath = currentFile.toString();
@@ -588,7 +632,10 @@ public class CodegenApp {
                     SwingUtilities.invokeLater(() -> appendConsole("Error: " + ex.getMessage() + "\n"));
                 }
             }
-            SwingUtilities.invokeLater(() -> appendConsole("> All generation complete.\n"));
+            SwingUtilities.invokeLater(() -> {
+                appendConsole("> All generation complete.\n");
+                previewPanel.refreshPreview();
+            });
         }).start();
     }
 
@@ -679,7 +726,8 @@ public class CodegenApp {
             case "cpp" -> {
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling C++...\n"));
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "g++", "-std=c++20", "-w", baseName + ".cpp", "-o", baseName, "-lfmt"));
+                    "g++", "-std=c++20", "-w", baseName + ".cpp", "-o", baseName,
+                    "-I/opt/homebrew/include", "-L/opt/homebrew/lib", "-lfmt"));
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName))) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
@@ -691,8 +739,9 @@ public class CodegenApp {
             }
             case "java" -> {
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Java...\n"));
+                String utilsJar = getUtilsJarPath();
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "javac", "-cp", ".:Utils.jar", "-Xlint", baseName + ".java"));
+                    "javac", "-cp", ".:" + utilsJar, "-Xlint", baseName + ".java"));
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName + ".class"))) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
@@ -700,7 +749,7 @@ public class CodegenApp {
                     runCmd.add("java");
                     runCmd.add("-ea");
                     runCmd.add("-cp");
-                    runCmd.add(".:Utils.jar");
+                    runCmd.add(".:" + utilsJar);
                     runCmd.add(baseName);
                     runCmd.addAll(argsList);
                     runProcess(runCmd, dir);
@@ -737,7 +786,24 @@ public class CodegenApp {
             case "swift" -> {
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Swift...\n"));
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "swiftc", baseName + ".swift", "-I", ".", "-L", ".", "-lUtils"));
+                    "swiftc", baseName + ".swift", "-I", getSwiftUtilsPath(), "-L", getSwiftUtilsPath(), "-lUtils"));
+                runProcess(compileCmd, dir);
+                if (Files.exists(dir.resolve(baseName))) {
+                    SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
+                    java.util.List<String> runCmd = new java.util.ArrayList<>();
+                    runCmd.add("./" + baseName);
+                    runCmd.addAll(argsList);
+                    ProcessBuilder pb = new ProcessBuilder(runCmd);
+                    pb.directory(dir.toFile());
+                    pb.environment().put("DYLD_LIBRARY_PATH", getSwiftUtilsPath());
+                    pb.redirectErrorStream(true);
+                    runProcessBuilder(pb);
+                }
+            }
+            case "rs" -> {
+                SwingUtilities.invokeLater(() -> appendConsole("> Compiling Rust...\n"));
+                java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
+                    "rustc", baseName + ".rs", "-o", baseName));
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName))) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
@@ -777,6 +843,7 @@ public class CodegenApp {
             case "js" -> "org.pureprogrammer.CodegenJavascriptVisitor";
             case "pl" -> "org.pureprogrammer.CodegenPerlVisitor";
             case "py" -> "org.pureprogrammer.CodegenPythonVisitor";
+            case "rs" -> "org.pureprogrammer.CodegenRustVisitor";
             case "swift" -> "org.pureprogrammer.CodegenSwiftVisitor";
             default -> throw new IllegalArgumentException("Unknown language: " + lang);
         };
@@ -789,9 +856,30 @@ public class CodegenApp {
             case "js" -> ".js";
             case "pl" -> ".pl";
             case "py" -> ".py";
+            case "rs" -> ".rs";
             case "swift" -> ".swift";
             default -> "";
         };
+    }
+
+    private String getUtilsJarPath() {
+        // Extract the lib directory from CODEGEN_CLASSPATH (strip the /*)
+        String cp = CODEGEN_CLASSPATH;
+        if (cp.endsWith("/*")) cp = cp.substring(0, cp.length() - 2);
+        java.io.File utils = new java.io.File(cp, "Utils.jar");
+        if (utils.exists()) return utils.getAbsolutePath();
+        return "Utils.jar";
+    }
+
+    private String getSwiftUtilsPath() {
+        // Look for Swift Utils (libUtils.dylib + Utils.swiftmodule) in utils/ sibling of lib/
+        String cp = CODEGEN_CLASSPATH;
+        if (cp.endsWith("/*")) cp = cp.substring(0, cp.length() - 2);
+        java.io.File libDir = new java.io.File(cp);
+        java.io.File utilsDir = new java.io.File(libDir.getParentFile(), "utils");
+        if (utilsDir.isDirectory()) return utilsDir.getAbsolutePath();
+        // Fallback: check if source directory has the files
+        return ".";
     }
 
     // ===== EDITING UTILITIES =====
@@ -885,6 +973,7 @@ public class CodegenApp {
         settings.windowWidth = frame.getWidth();
         settings.windowHeight = frame.getHeight();
         settings.mainDivider = mainSplit.getDividerLocation();
+        settings.editorPreviewDivider = editorPreviewSplit.getDividerLocation();
         if (aiChatPanel.isVisible()) {
             settings.aiDivider = aiSplit.getDividerLocation();
         }

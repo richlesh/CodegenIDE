@@ -147,8 +147,8 @@ jobs:
               --main-class CodegenApp \
               --name CodegenIDE \
               --app-version "${{ env.APP_VERSION }}" \
-              --vendor "Pure Programmer" \
-              --copyright "(C) 2026 Pure Programmer" \
+              --vendor "Glowing Cat Software" \
+              --copyright "(C) 2026 Glowing Cat Software" \
               --description "A lightweight IDE for the Codegen programming language" \
               --icon "${{ matrix.icon }}" \
               --file-associations fa-src.properties \
@@ -161,8 +161,8 @@ jobs:
               --main-class CodegenApp \
               --name CodegenIDE \
               --app-version "${{ env.APP_VERSION }}" \
-              --vendor "Pure Programmer" \
-              --copyright "(C) 2026 Pure Programmer" \
+              --vendor "Glowing Cat Software" \
+              --copyright "(C) 2026 Glowing Cat Software" \
               --description "A lightweight IDE for the Codegen programming language" \
               --icon "${{ matrix.icon }}" \
               --file-associations fa-src.properties \
@@ -174,8 +174,8 @@ jobs:
               --app-image CodegenIDE \
               --name CodegenIDE \
               --app-version "${{ env.APP_VERSION }}" \
-              --vendor "Pure Programmer" \
-              --copyright "(C) 2026 Pure Programmer" \
+              --vendor "Glowing Cat Software" \
+              --copyright "(C) 2026 Glowing Cat Software" \
               --description "A lightweight IDE for the Codegen programming language" \
               --icon "${{ matrix.icon }}" \
               --file-associations fa-src.properties \
@@ -202,8 +202,8 @@ jobs:
               --main-class CodegenApp \
               --name CodegenIDE \
               --app-version "${{ env.APP_VERSION }}" \
-              --vendor "Pure Programmer" \
-              --copyright "(C) 2026 Pure Programmer" \
+              --vendor "Glowing Cat Software" \
+              --copyright "(C) 2026 Glowing Cat Software" \
               --description "A lightweight IDE for the Codegen programming language" \
               --icon "${{ matrix.icon }}" \
               --file-associations fa-src.properties \

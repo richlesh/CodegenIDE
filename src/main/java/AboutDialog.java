@@ -56,14 +56,14 @@ public class AboutDialog {
         panel.add(copy);
         panel.add(Box.createVerticalStrut(12));
 
-        JLabel link1 = new JLabel("<html><a style='color:#4da3ff;'>Pure Programmer</a></html>");
+        JLabel link1 = new JLabel("<html><a style='color:#4da3ff;'>Glowing Cat Software</a></html>");
         link1.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
         link1.setHorizontalAlignment(SwingConstants.CENTER);
         link1.setAlignmentX(Component.CENTER_ALIGNMENT);
         link1.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         link1.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
-                try { Desktop.getDesktop().browse(java.net.URI.create("https://pureprogrammer.org")); }
+                try { Desktop.getDesktop().browse(java.net.URI.create("https://glowingcat.com")); }
                 catch (Exception ignored) {}
             }
         });

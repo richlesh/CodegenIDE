@@ -45,12 +45,12 @@ public class LicenseDialog {
         panel.add(keyField);
         panel.add(Box.createVerticalStrut(8));
 
-        JLabel link = new JLabel("<html><a href=''>Donate at Pure Programmer to get a license key.</a></html>");
+        JLabel link = new JLabel("<html><a href=''>Donate at Glowing Cat Software to get a license key.</a></html>");
         link.setAlignmentX(Component.CENTER_ALIGNMENT);
         link.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         link.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                try { Desktop.getDesktop().browse(java.net.URI.create("https://pureprogrammer.org")); }
+                try { Desktop.getDesktop().browse(java.net.URI.create("https://glowingcat.com")); }
                 catch (Exception ignored) {}
             }
         });

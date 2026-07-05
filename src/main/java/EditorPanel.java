@@ -16,6 +16,9 @@ public class EditorPanel extends JPanel {
     public EditorPanel() {
         super(new BorderLayout());
 
+        // Disable code templates globally before creating the text area
+        RSyntaxTextArea.setTemplatesEnabled(false);
+
         // Register custom syntax style for Codegen
         AbstractTokenMakerFactory atmf = (AbstractTokenMakerFactory) TokenMakerFactory.getDefaultInstance();
         atmf.putMapping("text/codegen", "CodegenTokenMaker");
@@ -32,6 +35,23 @@ public class EditorPanel extends JPanel {
         textArea.setPaintTabLines(false);
         textArea.setAnimateBracketMatching(false);
         textArea.setBracketMatchingEnabled(false);
+        textArea.setTemplatesEnabled(false);
+        textArea.setCloseCurlyBraces(false);
+        textArea.setCloseMarkupTags(false);
+        textArea.putClientProperty("JEditorPane.honorDisplayProperties", Boolean.TRUE);
+        textArea.putClientProperty("caretWidth", 2);
+        // Disable macOS auto-correction/completion
+        textArea.putClientProperty("JComponent.inputMethodSupported", Boolean.FALSE);
+        textArea.enableInputMethods(false);
+
+        // Disable word completion triggers that can duplicate text
+        javax.swing.InputMap im = textArea.getInputMap();
+        // Remove Ctrl+Enter (DumbCompleteWord) binding
+        im.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_ENTER,
+            java.awt.event.InputEvent.CTRL_DOWN_MASK), "none");
+        // Remove Shift+Ctrl+Space that might trigger completion
+        im.put(KeyStroke.getKeyStroke(java.awt.event.KeyEvent.VK_SPACE,
+            java.awt.event.InputEvent.CTRL_DOWN_MASK | java.awt.event.InputEvent.SHIFT_DOWN_MASK), "none");
 
         scrollPane = new RTextScrollPane(textArea);
         scrollPane.setLineNumbersEnabled(true);

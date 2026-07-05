@@ -41,6 +41,7 @@ public class AppSettings {
     public int windowHeight = 768;
     public int mainDivider = -1;    // editor/terminal vertical split
     public int aiDivider = -1;      // main/AI horizontal split
+    public int editorPreviewDivider = -1;  // editor/preview horizontal split
     public Color[] colors = {
         Color.BLACK,              // normal
         new Color(0, 0, 180),     // keyword
@@ -74,6 +75,7 @@ public class AppSettings {
             sb.append("  \"windowHeight\": ").append(windowHeight).append(",\n");
             sb.append("  \"mainDivider\": ").append(mainDivider).append(",\n");
             sb.append("  \"aiDivider\": ").append(aiDivider).append(",\n");
+            sb.append("  \"editorPreviewDivider\": ").append(editorPreviewDivider).append(",\n");
             sb.append("  \"colors\": [");
             for (int i = 0; i < colors.length; i++) {
                 if (i > 0) sb.append(", ");
@@ -135,6 +137,8 @@ public class AppSettings {
             if (md != null) s.mainDivider = md;
             Integer ad = extractInt(json, "aiDivider");
             if (ad != null) s.aiDivider = ad;
+            Integer epd = extractInt(json, "editorPreviewDivider");
+            if (epd != null) s.editorPreviewDivider = epd;
 
             List<String> colorList = extractArray(json, "colors");
             if (colorList != null) {

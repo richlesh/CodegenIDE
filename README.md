@@ -1,6 +1,6 @@
 # CodegenIDE
 
-A lightweight desktop IDE for the [Codegen](https://pureprogrammer.org) programming language. Codegen is a language-agnostic source language that generates equivalent programs in C++, Java, JavaScript, Perl, Python, and Swift.
+A lightweight desktop IDE for the [Codegen](https://glowingcat.com) programming language. Codegen is a language-agnostic source language that generates equivalent programs in C++, Java, JavaScript, Perl, Python, Rust and Swift.
 
 ## Features
 

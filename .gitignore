@@ -31,6 +31,9 @@ Thumbs.db
 *.rar
 !lib/*.jar
 
+# Swift Utils library
+!utils/
+
 # License key (private)
 src/main/java/License.java
 generate_license_key.py

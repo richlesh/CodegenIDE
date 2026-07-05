@@ -59,14 +59,14 @@ public class SplashScreen {
         }
 
         // Link line
-        JLabel msg4 = new JLabel("<html>projects at <a style='color:#4da3ff;'>Pure Programmer</a>.</html>");
+        JLabel msg4 = new JLabel("<html>projects at <a style='color:#4da3ff;'>Glowing Cat Software</a>.</html>");
         msg4.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
         msg4.setForeground(new Color(200, 200, 200));
         msg4.setAlignmentX(Component.CENTER_ALIGNMENT);
         msg4.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         msg4.addMouseListener(new MouseAdapter() {
             @Override public void mouseClicked(MouseEvent e) {
-                try { Desktop.getDesktop().browse(java.net.URI.create("https://pureprogrammer.org")); }
+                try { Desktop.getDesktop().browse(java.net.URI.create("https://glowingcat.com")); }
                 catch (Exception ignored) {}
             }
         });

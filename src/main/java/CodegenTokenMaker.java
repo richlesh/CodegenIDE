@@ -45,7 +45,8 @@ public class CodegenTokenMaker extends AbstractTokenMaker {
     private static final Set<String> BUILTINS = Set.of(
         "format", "string", "char", "byte", "short", "int", "long",
         "int16", "int32", "int64", "double",
-        "isNull", "listsize", "mapsize", "mapkeys", "mapkeysAsList"
+        "isNull", "listsize", "mapsize", "mapkeys", "mapkeysAsList",
+        "IRANGE", "FRANGE", "XRANGE"
     );
 
     // Comparison operator keywords
@@ -232,11 +233,13 @@ public class CodegenTokenMaker extends AbstractTokenMaker {
                             // This is a comment line - mark rest as comment
                             addToken(text, currentTokenStart, end - 1, Token.COMMENT_EOL, newStartOffset + currentTokenStart);
                             currentTokenType = Token.NULL;
-                            i = end; // skip to end
+                            i = end - 1; // skip to end
                         } else if (word.equals("BeginComment") && c == ':') {
-                            addToken(text, currentTokenStart, end - 1, Token.COMMENT_MULTILINE, newStartOffset + currentTokenStart);
+                            // Start of block comment - use COMMENT_DOCUMENTATION state
+                            // End-of-line handler will create the token without addNullToken
+                            // so RSyntaxTextArea continues with this state on the next line
                             currentTokenType = Token.COMMENT_DOCUMENTATION;
-                            i = end;
+                            i = end - 1;
                         } else {
                             addToken(text, currentTokenStart, i - 1, tokenType2, newStartOffset + currentTokenStart);
                             currentTokenType = Token.NULL;
@@ -281,7 +284,7 @@ public class CodegenTokenMaker extends AbstractTokenMaker {
                 addToken(text, currentTokenStart, end - 1, Token.COMMENT_MULTILINE, newStartOffset + currentTokenStart);
                 break;
             case Token.COMMENT_DOCUMENTATION:
-                addToken(text, currentTokenStart, end - 1, Token.COMMENT_MULTILINE, newStartOffset + currentTokenStart);
+                addToken(text, currentTokenStart, end - 1, Token.COMMENT_DOCUMENTATION, newStartOffset + currentTokenStart);
                 break;
             case Token.IDENTIFIER:
                 String word = new String(array, currentTokenStart, end - currentTokenStart);
