@@ -239,11 +239,11 @@ jobs:
 
           # Sign all nested dylibs and executables first
           find CodegenIDE.app -type f \( -name "*.dylib" -o -name "*.jnilib" -o -perm +111 \) | while read f; do
-            codesign --force --options runtime --timestamp --sign "$IDENTITY" --keychain $RUNNER_TEMP/build.keychain "$f"
+            codesign --force --options runtime --timestamp --entitlements entitlements.plist --sign "$IDENTITY" --keychain $RUNNER_TEMP/build.keychain "$f"
           done
 
           # Sign the app bundle
-          codesign --force --options runtime --timestamp --sign "$IDENTITY" --keychain $RUNNER_TEMP/build.keychain CodegenIDE.app
+          codesign --force --options runtime --timestamp --entitlements entitlements.plist --sign "$IDENTITY" --keychain $RUNNER_TEMP/build.keychain CodegenIDE.app
 
           # Verify signature
           codesign --verify --deep --strict CodegenIDE.app
