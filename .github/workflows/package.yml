@@ -166,6 +166,7 @@ jobs:
               --copyright "(C) 2026 Glowing Cat Software" \
               --description "A lightweight IDE for the Codegen programming language" \
               --icon "${{ matrix.icon }}" \
+              --file-associations fa-src.properties \
               --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6" \
               --type app-image
           elif [ "${{ runner.os }}" = "Linux" ]; then
