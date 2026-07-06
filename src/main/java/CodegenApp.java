@@ -60,6 +60,8 @@ public class CodegenApp {
     private JMenuBar menuBar;
     private JToolBar consoleToolBar;
     private volatile Thread runThread;
+    private volatile Process currentProcess;
+    private JMenuItem stopItem;
     private AIChatPanel aiChatPanel;
     private JSplitPane aiSplit;
     private PreviewPanel previewPanel;
@@ -88,6 +90,7 @@ public class CodegenApp {
                 if (promptSaveIfNeeded()) {
                     saveWindowState();
                     frame.dispose();
+                    exitIfLastWindow();
                 }
             }
         });
@@ -199,13 +202,13 @@ public class CodegenApp {
         JMenu fileMenu = new JMenu("File");
         JMenuItem newItem = new JMenuItem("New");
         newItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
-        newItem.addActionListener(e -> SwingUtilities.invokeLater(() -> new CodegenApp().createAndShowGUI()));
+        newItem.addActionListener(e -> SwingUtilities.invokeLater(() -> { saveWindowState(); new CodegenApp().createAndShowGUI(); }));
         JMenuItem openItem = new JMenuItem("Open");
         openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         openItem.addActionListener(e -> openFile());
         JMenuItem closeItem = new JMenuItem("Close");
         closeItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_W, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
-        closeItem.addActionListener(e -> { if (promptSaveIfNeeded()) { saveWindowState(); frame.dispose(); } });
+        closeItem.addActionListener(e -> { if (promptSaveIfNeeded()) { saveWindowState(); frame.dispose(); exitIfLastWindow(); } });
         saveItem = new JMenuItem("Save");
         saveItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
         saveItem.setEnabled(false);
@@ -327,6 +330,12 @@ public class CodegenApp {
         runMenu.add(runPython);
         runMenu.add(runRust);
         runMenu.add(runSwift);
+        runMenu.addSeparator();
+        stopItem = new JMenuItem("Stop");
+        stopItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD, Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+        stopItem.setEnabled(false);
+        stopItem.addActionListener(e -> stopRunning());
+        runMenu.add(stopItem);
 
         // Help menu
         JMenu helpMenu = new JMenu("Help");
@@ -417,8 +426,10 @@ public class CodegenApp {
         // Preview panel (right of editor, above console)
         previewPanel = new PreviewPanel();
         previewPanel.synchronizeScrolling(editorPanel.getScrollPane());
+        editorPanel.setMinimumSize(new Dimension(0, 0));
         editorPreviewSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editorPanel, previewPanel);
         editorPreviewSplit.setResizeWeight(0.5);
+        editorPreviewSplit.setContinuousLayout(true);
 
         mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, editorPreviewSplit, consolePanel);
         mainSplit.setResizeWeight(0.7);
@@ -652,7 +663,7 @@ public class CodegenApp {
         if (modified) return;
 
         if (runThread != null) {
-            runThread.interrupt();
+            stopRunning();
             return;
         }
 
@@ -671,6 +682,9 @@ public class CodegenApp {
                     Files.getLastModifiedTime(langSource)) > 0;
             } catch (IOException ignored) { needsRegen = true; }
         }
+
+        // Load the target language source into the preview pane
+        previewPanel.setSelectedLanguage(lang);
 
         console.clear();
         final String fBaseName = baseName;
@@ -715,7 +729,9 @@ public class CodegenApp {
             } catch (Exception ex) {
                 SwingUtilities.invokeLater(() -> appendConsole("Error: " + ex.getMessage() + "\n"));
             } finally {
+                currentProcess = null;
                 runThread = null;
+                SwingUtilities.invokeLater(() -> stopItem.setEnabled(false));
             }
         }).start();
     }
@@ -905,16 +921,61 @@ public class CodegenApp {
         runProcessBuilder(pb);
     }
 
+    private void stopRunning() {
+        Process proc = currentProcess;
+        if (proc != null) {
+            proc.destroyForcibly();
+        }
+        Thread t = runThread;
+        if (t != null) {
+            t.interrupt();
+        }
+    }
+
     private void runProcessBuilder(ProcessBuilder pb) throws Exception {
         Process proc = pb.start();
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(proc.getInputStream()))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                final String l = line;
-                SwingUtilities.invokeLater(() -> appendConsole(l + "\n"));
+        currentProcess = proc;
+        SwingUtilities.invokeLater(() -> stopItem.setEnabled(true));
+
+        // Connect terminal input to process stdin
+        PipedOutputStream inputPipe = new PipedOutputStream();
+        PipedInputStream pipedIn = new PipedInputStream(inputPipe);
+        console.enableInput(inputPipe);
+
+        // Forward terminal input to process stdin
+        OutputStream procStdin = proc.getOutputStream();
+        Thread inputThread = new Thread(() -> {
+            try {
+                byte[] buf = new byte[256];
+                int n;
+                while ((n = pipedIn.read(buf)) != -1) {
+                    procStdin.write(buf, 0, n);
+                    procStdin.flush();
+                }
+            } catch (IOException ignored) {}
+        });
+        inputThread.setDaemon(true);
+        inputThread.start();
+
+        // Read output character-by-character so prompts without newlines display immediately
+        try (InputStream is = proc.getInputStream()) {
+            byte[] buf = new byte[4096];
+            int n;
+            while ((n = is.read(buf)) != -1) {
+                String chunk = new String(buf, 0, n, java.nio.charset.StandardCharsets.UTF_8);
+                SwingUtilities.invokeLater(() -> console.write(chunk));
             }
         }
         proc.waitFor();
+
+        // Clean up input
+        console.disableInput();
+        try { inputPipe.close(); } catch (IOException ignored) {}
+        try { pipedIn.close(); } catch (IOException ignored) {}
+        try { procStdin.close(); } catch (IOException ignored) {}
+
+        currentProcess = null;
+        SwingUtilities.invokeLater(() -> stopItem.setEnabled(false));
     }
 
     private String getVisitorClass(String lang) {
@@ -1048,6 +1109,13 @@ public class CodegenApp {
             return !modified;
         }
         return result == JOptionPane.NO_OPTION;
+    }
+
+    private void exitIfLastWindow() {
+        for (Window w : Window.getWindows()) {
+            if (w instanceof JFrame && w.isDisplayable()) return;
+        }
+        System.exit(0);
     }
 
     private void saveWindowState() {

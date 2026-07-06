@@ -171,7 +171,7 @@ public class AppSettings {
     }
 
     private static Integer extractInt(String json, String key) {
-        Matcher m = Pattern.compile("\"" + key + "\"\\s*:\\s*(\\d+)").matcher(json);
+        Matcher m = Pattern.compile("\"" + key + "\"\\s*:\\s*(-?\\d+)").matcher(json);
         return m.find() ? Integer.parseInt(m.group(1)) : null;
     }
 

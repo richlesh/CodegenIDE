@@ -65,8 +65,8 @@ public class PreviewPanel extends JPanel {
         add(toolbar, BorderLayout.NORTH);
         add(scrollPane, BorderLayout.CENTER);
 
-        setPreferredSize(new Dimension(400, 0));
-        setMinimumSize(new Dimension(200, 0));
+        setPreferredSize(new Dimension(300, 0));
+        setMinimumSize(new Dimension(0, 0));
     }
 
     public RSyntaxTextArea getTextArea() {
@@ -116,6 +116,28 @@ public class PreviewPanel extends JPanel {
             }
             syncing[0] = false;
         });
+    }
+
+    /**
+     * Set the selected language in the combo box by extension code (e.g. "cpp", "java", "js", "pl", "py", "rs", "swift").
+     * This updates the preview to show the generated source for that language.
+     */
+    public void setSelectedLanguage(String lang) {
+        int idx = switch (lang) {
+            case "cpp" -> 0;
+            case "java" -> 1;
+            case "js" -> 2;
+            case "pl" -> 3;
+            case "py" -> 4;
+            case "rs" -> 5;
+            case "swift" -> 6;
+            default -> -1;
+        };
+        if (idx >= 0 && idx != langCombo.getSelectedIndex()) {
+            langCombo.setSelectedIndex(idx); // triggers refreshPreview via action listener
+        } else {
+            refreshPreview();
+        }
     }
 
     /**
