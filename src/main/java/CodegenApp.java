@@ -21,18 +21,29 @@ public class CodegenApp {
         // Try to find lib/ relative to the jar/class location
         try {
             java.net.URL url = CodegenApp.class.getProtectionDomain().getCodeSource().getLocation();
-            java.io.File codeLoc = new java.io.File(url.toURI());
-            java.io.File baseDir;
-            if (codeLoc.isDirectory()) {
-                // Running from target/classes — go up to project root
-                baseDir = codeLoc.getParentFile().getParentFile();
-            } else {
-                // Running from a jar — lib/ is next to the jar
-                baseDir = codeLoc.getParentFile();
+            if (url != null) {
+                java.io.File codeLoc = new java.io.File(url.toURI());
+                java.io.File baseDir;
+                if (codeLoc.isDirectory()) {
+                    // Running from target/classes — go up to project root
+                    baseDir = codeLoc.getParentFile().getParentFile();
+                } else {
+                    // Running from a jar — lib/ is next to the jar
+                    baseDir = codeLoc.getParentFile();
+                }
+                java.io.File libDir = new java.io.File(baseDir, "lib");
+                if (libDir.isDirectory()) return libDir.getAbsolutePath() + "/*";
+                // jpackage layout: all jars are siblings in the same directory (app/)
+                java.io.File codegenJar = new java.io.File(baseDir, "Codegen-1.0.jar");
+                if (codegenJar.exists()) return baseDir.getAbsolutePath() + "/*";
             }
-            java.io.File libDir = new java.io.File(baseDir, "lib");
-            if (libDir.isDirectory()) return libDir.getAbsolutePath() + "/*";
         } catch (Exception ignored) {}
+        // Try app.home system property (set by jpackage launchers)
+        String appHome = System.getProperty("app.home");
+        if (appHome != null) {
+            java.io.File appDir = new java.io.File(appHome, "app");
+            if (appDir.isDirectory()) return appDir.getAbsolutePath() + "/*";
+        }
         // Fallback: try current working directory
         java.io.File cwdLib = new java.io.File("lib");
         if (cwdLib.isDirectory()) return cwdLib.getAbsolutePath() + "/*";
