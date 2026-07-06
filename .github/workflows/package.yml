@@ -118,7 +118,7 @@ jobs:
           mkdir -p staging
           cp target/CodegenIDE-*.jar staging/
           # Include the lib/ jars needed at runtime
-          cp lib/Codegen.jar staging/
+          cp lib/Codegen-1.0.jar staging/
           cp lib/Utils.jar staging/
           cp lib/antlr-4.13.0-complete.jar staging/
           # Determine the actual jar filename for jpackage

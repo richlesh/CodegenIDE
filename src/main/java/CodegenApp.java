@@ -106,7 +106,8 @@ public class CodegenApp {
         frame.setVisible(true);
 
         // Restore divider positions after frame is visible and laid out
-        SwingUtilities.invokeLater(() -> {
+        // Use nested invokeLater to ensure all layout passes have completed
+        SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(() -> {
             if (settings.mainDivider > 0) mainSplit.setDividerLocation(settings.mainDivider);
             if (settings.editorPreviewDivider > 0) editorPreviewSplit.setDividerLocation(settings.editorPreviewDivider);
             if (settings.aiVisible && settings.aiDivider > 0) aiSplit.setDividerLocation(settings.aiDivider);
@@ -115,7 +116,7 @@ public class CodegenApp {
                 splashShown = true;
                 SplashScreen.show();
             }
-        });
+        }));
     }
 
     private void applySettings() {
@@ -427,6 +428,7 @@ public class CodegenApp {
         previewPanel = new PreviewPanel();
         previewPanel.synchronizeScrolling(editorPanel.getScrollPane());
         editorPanel.setMinimumSize(new Dimension(0, 0));
+        previewPanel.setMinimumSize(new Dimension(0, 0));
         editorPreviewSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, editorPanel, previewPanel);
         editorPreviewSplit.setResizeWeight(0.5);
         editorPreviewSplit.setContinuousLayout(true);
