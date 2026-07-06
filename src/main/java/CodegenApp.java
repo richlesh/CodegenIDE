@@ -541,7 +541,8 @@ public class CodegenApp {
 
         // Determine destination path based on language
         final String ext = getExtension(lang);
-        Path destDir = currentFile.getParent();
+        Path destDir = currentFile.getParent().resolve("gen");
+        try { Files.createDirectories(destDir); } catch (IOException ignored) {}
         String destPath = destDir.resolve(baseName + ext).toString();
 
         console.clear();
@@ -599,7 +600,8 @@ public class CodegenApp {
                 String baseName = currentFile.getFileName().toString();
                 if (baseName.endsWith(".src")) baseName = baseName.substring(0, baseName.length() - 4);
                 String ext = getExtension(lang);
-                Path destDir = currentFile.getParent();
+                Path destDir = currentFile.getParent().resolve("gen");
+                try { Files.createDirectories(destDir); } catch (IOException ignored) {}
                 String destPath = destDir.resolve(baseName + ext).toString();
 
                 final String langLabel = lang.toUpperCase();
@@ -657,7 +659,8 @@ public class CodegenApp {
         String baseName = currentFile.getFileName().toString();
         if (baseName.endsWith(".src")) baseName = baseName.substring(0, baseName.length() - 4);
         String ext = getExtension(lang);
-        Path destDir = currentFile.getParent();
+        Path destDir = currentFile.getParent().resolve("gen");
+        try { Files.createDirectories(destDir); } catch (IOException ignored) {}
         Path langSource = destDir.resolve(baseName + ext);
 
         // Check if language-specific source needs regeneration
@@ -724,6 +727,14 @@ public class CodegenApp {
 
         switch (lang) {
             case "cpp" -> {
+                // Copy Utils.hpp (overwrite if it already exists)
+                Path utilsHpp = dir.resolve("Utils.hpp");
+                try (InputStream hppIn = getClass().getResourceAsStream("/utils/Utils.hpp")) {
+                    if (hppIn != null) {
+                        Files.copy(hppIn, utilsHpp, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling C++...\n"));
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
                     "g++", "-std=c++20", "-w", baseName + ".cpp", "-o", baseName,
@@ -738,6 +749,14 @@ public class CodegenApp {
                 }
             }
             case "java" -> {
+                // Copy Utils.jar (overwrite if it already exists)
+                Path utilsJarDest = dir.resolve("Utils.jar");
+                try (InputStream jarIn = getClass().getResourceAsStream("/utils/Utils.jar")) {
+                    if (jarIn != null) {
+                        Files.copy(jarIn, utilsJarDest, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Java...\n"));
                 String utilsJar = getUtilsJarPath();
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
@@ -756,6 +775,14 @@ public class CodegenApp {
                 }
             }
             case "js" -> {
+                // Copy Utils.js (overwrite if it already exists)
+                Path utilsJs = dir.resolve("Utils.js");
+                try (InputStream jsIn = getClass().getResourceAsStream("/utils/Utils.js")) {
+                    if (jsIn != null) {
+                        Files.copy(jsIn, utilsJs, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+
                 SwingUtilities.invokeLater(() -> appendConsole("> Running Javascript...\n"));
                 java.util.List<String> runCmd = new java.util.ArrayList<>();
                 runCmd.add("node");
@@ -764,6 +791,14 @@ public class CodegenApp {
                 runProcess(runCmd, dir);
             }
             case "pl" -> {
+                // Copy Utils.pm (overwrite if it already exists)
+                Path utilsPm = dir.resolve("Utils.pm");
+                try (InputStream pmIn = getClass().getResourceAsStream("/utils/Utils.pm")) {
+                    if (pmIn != null) {
+                        Files.copy(pmIn, utilsPm, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+
                 SwingUtilities.invokeLater(() -> appendConsole("> Running Perl...\n"));
                 java.util.List<String> runCmd = new java.util.ArrayList<>();
                 runCmd.add("perl");
@@ -776,6 +811,14 @@ public class CodegenApp {
                 runProcessBuilder(pb);
             }
             case "py" -> {
+                // Copy Utils.py (overwrite if it already exists)
+                Path utilsPy = dir.resolve("Utils.py");
+                try (InputStream pyIn = getClass().getResourceAsStream("/utils/Utils.py")) {
+                    if (pyIn != null) {
+                        Files.copy(pyIn, utilsPy, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+
                 SwingUtilities.invokeLater(() -> appendConsole("> Running Python...\n"));
                 java.util.List<String> runCmd = new java.util.ArrayList<>();
                 runCmd.add("python3");
@@ -784,9 +827,17 @@ public class CodegenApp {
                 runProcess(runCmd, dir);
             }
             case "swift" -> {
+                 // Copy Utils.swift (overwrite if it already exists)
+                Path utilsSwift = dir.resolve("Utils.swift");
+                try (InputStream sdIn = getClass().getResourceAsStream("/utils/Utils.swift")) {
+                    if (sdIn != null) {
+                        Files.copy(sdIn, utilsSwift, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Swift...\n"));
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "swiftc", baseName + ".swift", "-I", getSwiftUtilsPath(), "-L", getSwiftUtilsPath(), "-lUtils"));
+                    "swiftc", baseName + ".swift", "Utils.swift"));
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName))) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
@@ -801,16 +852,46 @@ public class CodegenApp {
                 }
             }
             case "rs" -> {
+                // Create rs_proj/src/bin/ directory structure if it doesn't exist
+                Path rsProj = dir.resolve("rs_proj");
+                Path rsSrcBin = rsProj.resolve("src").resolve("bin");
+                if (!Files.exists(rsSrcBin)) {
+                    Files.createDirectories(rsSrcBin);
+                }
+
+                // Create Cargo.toml if it doesn't exist
+                Path cargoToml = rsProj.resolve("Cargo.toml");
+                try (InputStream cargoIn = getClass().getResourceAsStream("/utils/Cargo.toml")) {
+                    if (cargoIn != null) {
+                        Files.copy(cargoIn, cargoToml, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+
+                // Copy utils.rs if it doesn't exist
+                Path utilsRs = rsSrcBin.resolve("utils.rs");
+                try (InputStream utilsIn = getClass().getResourceAsStream("/utils/utils.rs")) {
+                    if (utilsIn != null) {
+                        Files.copy(utilsIn, utilsRs, StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+
+                // Copy the generated .rs source into rs_proj/src/bin/
+                Path rsSource = dir.resolve(baseName + ".rs");
+                Path rsDest = rsSrcBin.resolve(baseName + ".rs");
+                Files.copy(rsSource, rsDest, StandardCopyOption.REPLACE_EXISTING);
+
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Rust...\n"));
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "rustc", baseName + ".rs", "-o", baseName));
-                runProcess(compileCmd, dir);
-                if (Files.exists(dir.resolve(baseName))) {
+                    "cargo", "build", "--bin", baseName));
+                runProcess(compileCmd, rsProj);
+
+                Path binaryPath = rsProj.resolve("target").resolve("debug").resolve(baseName);
+                if (Files.exists(binaryPath)) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
                     java.util.List<String> runCmd = new java.util.ArrayList<>();
-                    runCmd.add("./" + baseName);
+                    runCmd.add(binaryPath.toString());
                     runCmd.addAll(argsList);
-                    runProcess(runCmd, dir);
+                    runProcess(runCmd, rsProj);
                 }
             }
         }

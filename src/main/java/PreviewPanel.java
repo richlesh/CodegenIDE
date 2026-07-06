@@ -142,7 +142,7 @@ public class PreviewPanel extends JPanel {
         // Determine the generated file path
         String baseName = currentSourceFile.getFileName().toString();
         if (baseName.endsWith(".src")) baseName = baseName.substring(0, baseName.length() - 4);
-        Path generatedFile = currentSourceFile.getParent().resolve(baseName + ext);
+        Path generatedFile = currentSourceFile.getParent().resolve("gen").resolve(baseName + ext);
 
         if (Files.exists(generatedFile)) {
             try {
