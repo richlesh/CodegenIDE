@@ -81,6 +81,15 @@ public class CodegenApp {
     public static void main(String[] args) {
         if (!IS_WINDOWS && !IS_MAC) {
             checkXWayland();
+            // Set WM_CLASS so Linux taskbar matches the .desktop file when pinned.
+            // jpackage sets StartupWMClass=codegenide-CodegenApp in the .desktop file.
+            // We must set the toolkit's app class name to match.
+            try {
+                var xToolkit = Toolkit.getDefaultToolkit();
+                var awtAppClassNameField = xToolkit.getClass().getDeclaredField("awtAppClassName");
+                awtAppClassNameField.setAccessible(true);
+                awtAppClassNameField.set(xToolkit, "codegenide-CodegenApp");
+            } catch (Exception ignored) {}
         }
         if (IS_MAC) {
             System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -95,6 +104,13 @@ public class CodegenApp {
     void createAndShowGUI() {
         settings = AppSettings.load();
         frame = new JFrame("CodegenIDE");
+
+        // Set window icon (critical for Linux taskbar/pinning)
+        var iconUrl = CodegenApp.class.getClassLoader().getResource("app_icon_256.png");
+        if (iconUrl != null) {
+            frame.setIconImage(new ImageIcon(iconUrl).getImage());
+        }
+
         frame.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
             @Override public void windowClosing(WindowEvent e) {
@@ -363,10 +379,41 @@ public class CodegenApp {
         aiToggleItem.addActionListener(e -> toggleAIPanel(aiToggleItem.isSelected()));
         helpMenu.add(aiToggleItem);
 
+        // Window menu
+        JMenu windowMenu = new JMenu("Window");
+        windowMenu.addMenuListener(new javax.swing.event.MenuListener() {
+            @Override public void menuSelected(javax.swing.event.MenuEvent e) {
+                windowMenu.removeAll();
+                java.util.List<JFrame> frames = new java.util.ArrayList<>();
+                for (Window w : Window.getWindows()) {
+                    if (w instanceof JFrame jf && w.isDisplayable() && w.isVisible()) {
+                        frames.add(jf);
+                    }
+                }
+                frames.sort((a, b) -> getWindowLabel(a).compareToIgnoreCase(getWindowLabel(b)));
+                for (JFrame jf : frames) {
+                    String label = getWindowLabel(jf);
+                    JMenuItem item = new JMenuItem(label);
+                    if (jf == frame) {
+                        item.setFont(item.getFont().deriveFont(Font.BOLD));
+                    }
+                    item.addActionListener(ev -> {
+                        jf.setState(java.awt.Frame.NORMAL);
+                        jf.toFront();
+                        jf.requestFocus();
+                    });
+                    windowMenu.add(item);
+                }
+            }
+            @Override public void menuDeselected(javax.swing.event.MenuEvent e) {}
+            @Override public void menuCanceled(javax.swing.event.MenuEvent e) {}
+        });
+
         menuBar.add(fileMenu);
         menuBar.add(editMenu);
         menuBar.add(generateMenu);
         menuBar.add(runMenu);
+        menuBar.add(windowMenu);
         menuBar.add(helpMenu);
         return menuBar;
     }
@@ -448,7 +495,7 @@ public class CodegenApp {
         mainSplit.setResizeWeight(0.7);
 
         // AI Chat panel (right side)
-        aiChatPanel = new AIChatPanel(codeEditor, console, settings);
+        aiChatPanel = new AIChatPanel(codeEditor, previewPanel, console, settings);
         aiSplit = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, mainSplit, aiChatPanel);
         aiSplit.setResizeWeight(1.0);
         if (!settings.aiVisible) {
@@ -766,7 +813,7 @@ public class CodegenApp {
 
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling C++...\n"));
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "g++", "-std=c++20", "-w", baseName + ".cpp", "-o", baseName,
+                    settings.getEffectiveToolPath("g++"), "-std=c++20", "-w", baseName + ".cpp", "-o", baseName,
                     "-I/opt/homebrew/include", "-L/opt/homebrew/lib", "-lfmt"));
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName))) {
@@ -788,13 +835,16 @@ public class CodegenApp {
 
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Java...\n"));
                 String utilsJar = getUtilsJarPath();
+                String javacPath = settings.getEffectiveToolPath("javac");
+                String javaPath = javacPath.endsWith("javac") ?
+                    javacPath.substring(0, javacPath.length() - 1) : "java";
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "javac", "-cp", ".:" + utilsJar, "-Xlint", baseName + ".java"));
+                    javacPath, "-cp", ".:" + utilsJar, "-Xlint", baseName + ".java"));
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName + ".class"))) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
                     java.util.List<String> runCmd = new java.util.ArrayList<>();
-                    runCmd.add("java");
+                    runCmd.add(javaPath);
                     runCmd.add("-ea");
                     runCmd.add("-cp");
                     runCmd.add(".:" + utilsJar);
@@ -814,7 +864,7 @@ public class CodegenApp {
 
                 SwingUtilities.invokeLater(() -> appendConsole("> Running Javascript...\n"));
                 java.util.List<String> runCmd = new java.util.ArrayList<>();
-                runCmd.add("node");
+                runCmd.add(settings.getEffectiveToolPath("node"));
                 runCmd.add(baseName + ".js");
                 runCmd.addAll(argsList);
                 runProcess(runCmd, dir);
@@ -830,7 +880,7 @@ public class CodegenApp {
 
                 SwingUtilities.invokeLater(() -> appendConsole("> Running Perl...\n"));
                 java.util.List<String> runCmd = new java.util.ArrayList<>();
-                runCmd.add("perl");
+                runCmd.add(settings.getEffectiveToolPath("perl"));
                 runCmd.add(baseName + ".pl");
                 runCmd.addAll(argsList);
                 ProcessBuilder pb = new ProcessBuilder(runCmd);
@@ -850,7 +900,7 @@ public class CodegenApp {
 
                 SwingUtilities.invokeLater(() -> appendConsole("> Running Python...\n"));
                 java.util.List<String> runCmd = new java.util.ArrayList<>();
-                runCmd.add("python3");
+                runCmd.add(settings.getEffectiveToolPath("python3"));
                 runCmd.add(baseName + ".py");
                 runCmd.addAll(argsList);
                 runProcess(runCmd, dir);
@@ -865,8 +915,9 @@ public class CodegenApp {
                 }
 
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Swift...\n"));
+                String swiftcPath = settings.getEffectiveToolPath("swiftc");
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "swiftc", baseName + ".swift", "Utils.swift"));
+                    swiftcPath, baseName + ".swift", "Utils.swift"));
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName))) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
@@ -910,8 +961,11 @@ public class CodegenApp {
                 Files.copy(rsSource, rsDest, StandardCopyOption.REPLACE_EXISTING);
 
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Rust...\n"));
+                String rustcPath = settings.getEffectiveToolPath("rustc");
+                String cargoPath = rustcPath.endsWith("rustc") ?
+                    rustcPath.substring(0, rustcPath.length() - 5) + "cargo" : "cargo";
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    "cargo", "build", "--bin", baseName));
+                    cargoPath, "build", "--bin", baseName));
                 runProcess(compileCmd, rsProj);
 
                 Path binaryPath = rsProj.resolve("target").resolve("debug").resolve(baseName);
@@ -1110,6 +1164,14 @@ public class CodegenApp {
             codeEditor.replaceSelection(sb.toString());
             codeEditor.select(selStart, selStart + sb.length());
         } catch (javax.swing.text.BadLocationException ignored) {}
+    }
+
+    private static String getWindowLabel(JFrame jf) {
+        String title = jf.getTitle();
+        if (title.startsWith("CodegenIDE - ")) {
+            return title.substring("CodegenIDE - ".length());
+        }
+        return title;
     }
 
     private boolean promptSaveIfNeeded() {

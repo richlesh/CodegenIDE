@@ -180,6 +180,7 @@ jobs:
               --copyright "(C) 2026 Glowing Cat Software" \
               --description "A lightweight IDE for the Codegen programming language" \
               --icon "${{ matrix.icon }}" \
+              --java-options "-Dawt.useSystemAAFontSettings=on" \
               --jlink-options "--strip-debug --no-header-files --no-man-pages --compress zip-6" \
               --type app-image
 
@@ -195,18 +196,42 @@ jobs:
               --file-associations fa-src.properties \
               --linux-app-category development \
               --linux-menu-group "Development;IDE;" \
+              --linux-shortcut \
               --linux-package-deps "xdg-utils" \
               --type ${{ matrix.pkg_type }}
 
-            # Fix deb dependencies
+            # Fix deb dependencies and desktop file
             if [ "${{ matrix.pkg_type }}" = "deb" ]; then
               DEB_FILE=$(ls codegenide_*.deb 2>/dev/null || ls codegenide*.deb 2>/dev/null)
               if [ -n "$DEB_FILE" ]; then
                 TMPDIR=$(mktemp -d)
                 dpkg-deb -R "$DEB_FILE" "$TMPDIR"
                 sed -i 's/^Depends:.*/Depends: xdg-utils/' "$TMPDIR/DEBIAN/control"
+                # Ensure StartupWMClass matches what the JVM reports
+                DESKTOP_FILE=$(find "$TMPDIR" -name "*.desktop" | head -1)
+                if [ -n "$DESKTOP_FILE" ]; then
+                  if ! grep -q "^StartupWMClass=" "$DESKTOP_FILE"; then
+                    sed -i '/^\[Desktop Entry\]/a StartupWMClass=codegenide-CodegenApp' "$DESKTOP_FILE"
+                  else
+                    sed -i 's/^StartupWMClass=.*/StartupWMClass=codegenide-CodegenApp/' "$DESKTOP_FILE"
+                  fi
+                fi
                 dpkg-deb -b "$TMPDIR" "$DEB_FILE"
                 rm -rf "$TMPDIR"
+              fi
+            fi
+
+            # Fix rpm desktop file
+            if [ "${{ matrix.pkg_type }}" = "rpm" ]; then
+              # For RPM, we need to patch the app-image desktop file before packaging
+              # The desktop file should already be handled by jpackage, but verify
+              DESKTOP_FILE=$(find CodegenIDE -name "*.desktop" 2>/dev/null | head -1)
+              if [ -n "$DESKTOP_FILE" ]; then
+                if ! grep -q "^StartupWMClass=" "$DESKTOP_FILE"; then
+                  sed -i '/^\[Desktop Entry\]/a StartupWMClass=codegenide-CodegenApp' "$DESKTOP_FILE"
+                else
+                  sed -i 's/^StartupWMClass=.*/StartupWMClass=codegenide-CodegenApp/' "$DESKTOP_FILE"
+                fi
               fi
             fi
           else
