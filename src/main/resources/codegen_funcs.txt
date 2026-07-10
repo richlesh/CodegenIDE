@@ -162,6 +162,12 @@ USize(<any>) => <uint>
 	default:	{1}
 	rs:			({1}) as usize
 
+# SubscriptInt(<any>) Typecast to subscript int type (rust and swift only)
+SubscriptInt(<any>) => <int>
+	default:	{1}
+	rs:			({1}) as usize
+	swift:		Int({1})
+
 # Double(<any>)	 Typecast to double (rust and swift only)
 Double(<any>) => <double>
 	default:	{1}
@@ -622,7 +628,7 @@ getbyte(<getbyte_t>?) => <bool>
 getbyte@2(<getbyte_t>?, <ifilehandleBinary>) => <bool>
 	cpp:	Utils::getbytes({2}, {1})
 	java:	({1} = Utils.getbyte({2})) != -1
-	js:		({1} = Utils.getbyteSync({2})) != -1
+	js:		({1} = await Utils.getbyte({2})) != -1
 	pl:		defined({1} = Utils::getbyte(*{2}))
 	py:		{1} = Utils.getbyte({2})
 	rs:		{1} = utils::get_byte(&mut {2})
@@ -765,7 +771,7 @@ putchar(<char>) => void
 putbyte@2(<byte>, <ofilehandleBinary>) => void
 	cpp:		{2}.put({1})
 	java:		{2}.write({1})
-	js:			Utils.putbyteSync({1}, {2})
+	js:			Utils.putbyte({1}, {2})
 	pl:			print {2} chr({1})
 	py:			{2}.write({1}.to_bytes(1, byteorder='big', signed=False))
 	rs:			{2}.write_all(&[{1}])?
@@ -818,11 +824,12 @@ fread([any], <uint>, <ifilehandleBinary>) => <uint>
 	cpp:		({3}.read((char*){1}.get(), {2}), {3}.gcount())
 	java:		{3}.read({1})
 	javaRequire:	import java.io.*;
-	js:			fs.readSync({3}, {1}, 0, {2})
+	js:			await Utils.fread({1}, {2}, {3})
 	jsRequire:	const fs = require('fs');
 	pl:			read({3}, {1}, {2})
 	py:			{3}.readinto({1})
 	rs:			{3}.read(&mut {1})?
+	rsRequire:	use std::io::{Read};
 	swift:		Utils.fread(&{1}, {2}, {3}!)
 
 # fwrite([any] buffer, <uint> count, <ofilehandleBinary> ofh) => <uint>
@@ -830,11 +837,12 @@ fwrite([any], <uint>, <ofilehandleBinary>) => <uint>
 	cpp:		{3}.write((char*){1}.get(), {2})
 	java:		{3}.write({1}, 0, {2})
 	javaRequire:	import java.io.*;
-	js:			fs.writeSync({3}, {1}, 0, {2})
+	js:			fs.writeSync({3}.fd, {1}, 0, {2})
 	jsRequire:	const fs = require('fs');
 	pl:			print {3} {1}
 	py:			{3}.write({1}[0:{2}])
 	rs:			{3}.write(&{1}[..{2}])?
+	rsRequire:	use std::io::{Write};
 	swift:		try {3}!.write(contentsOf: {1}[0..<{2}])
 
 #filesize<string>(<string> filespec)
@@ -892,6 +900,8 @@ printLine@2(<string>, <ofilehandle>) => void
 	js:			{2}.write({1} + "\n")
 	pl:			print {2} {1}, "\n"
 	py:			print({1}, file={2}, end="\n")
+	rs:			writeln!({2}, "{}", {1}).unwrap()
+	rsRequire:	use std::io::{Write};
 #	swift:		{2}.print({1}, terminator: "\n")
 #	swift:		{1}.write(to: {2}, atomically: !TRUE!, encoding: String.Encoding.utf8)
 	swift: 		{2}.write(contentsOf: {1} + "\n")
@@ -2059,15 +2069,15 @@ enumToInt@2(≤any≥, any) => <int>
 	swift:		{1}.rawValue
 
 # intToEnum(≤any≥)	Convert integer to enumeration constant
-# enumname is a string
+# enumname is a string literal of the name of the enum class
 intToEnum(<enumname>, <int>) => ≤any≥
 	cpp:		static_cast<\{1}>({2})
 	java:		\{1}.valueOf({2})
 	js:			{2}
 	pl:			\{1}->from_ordinal({2})
 	py:			\{1}({2})
-	rs:			\{1}::try_from({2}).unwrap()
-	swift:		\{1}(rawValue: {2})!
+	rs:			\{1}::try_from({2}).ok()
+	swift:		\{1}(rawValue: {2})
 
 # imbue UTF-8
 imbue(<filehandle>) => void
@@ -2106,7 +2116,7 @@ openBinaryFileRead(<string>) => <ifstream>
 	cppU:		ifstream(filesystem::path({1}).c_str(), ios_base::binary)
 	cppURequire:	#include <fstream>
 	java:		new BufferedInputStream(new FileInputStream({1}))
-	js:			fs.openSync({1}, 'r')
+	js:			fs.createReadStream({1})
 	jsRequire:	const fs = require('fs');
 	pl:			DON'T USE THIS MACRO
 	py:			open({1}, "rb")
@@ -2148,12 +2158,12 @@ openBinaryFileWrite(<string>) => <ifstream>
 	cppU:		ofstream(filesystem::path({1}).c_str(), ios_base::binary)
 	cppURequire:	#include <fstream>
 	java:		new BufferedOutputStream(new FileOutputStream({1}))
-	js:			fs.openSync({1}, 'w')
+	js:			fs.createWriteStream({1})
 	jsRequire:	const fs = require('fs');
 	pl:			DON'T USE THIS MACRO
 	py:			open({1}, "wb")
-	rs:			BufWriter::new(fs::File::create({1})?)
-	rsRequire:	use std::fs::{self};\nuse std::io::{BufWriter};
+	rs:			BufWriter::new(File::create({1})?)
+	rsRequire:	use std::fs::{File};\nuse std::io::{BufWriter};
 	swift:		FileHandle(forWritingAtPath: {1})
 
 # Still need to set binmode() for Perl
@@ -2180,14 +2190,45 @@ isBad(<filehandle>) => <bool>
 	swift:		{1} == !NULL!
 	default:	DON'T USE THIS MACRO
 
-# close(filehandle)
-close(<filehandle>) => void
+# close<ifilehandle>(<ifilehandle>)
+close<ifilehandle>(<ifilehandle>) => void
 	cpp:		{1}.close()
 	java:		try {{1}.close();} catch (IOException ex) {}
+	js:         {1}.close()
+	pl:			close({1})
+	py:			{1}.close()
+	swift:		{1}!.close()
+	default:	
+
+# close<ifilehandleBinary>(<ifilehandleBinary>)
+close<ifilehandleBinary>(<ifilehandleBinary>) => void
+	cpp:		{1}.close()
+	java:		try {{1}.close();} catch (IOException ex) {}
+	js:         {1}.close()
+	pl:			close({1})
+	py:			{1}.close()
+	swift:		{1}!.close()
+	default:
+
+# close<ofilehandle>(<ofilehandle>)
+close<ofilehandle>(<ofilehandle>) => void
+	cpp:		{1}.close()
+	java:		try {{1}.close();} catch (IOException ex) {}
+	js:         await new Promise((resolve, reject) => {{1}.end(() => resolve());{1}.on('error', reject);})
 	pl:			close({1})
 	py:			{1}.close()
 	swift:		{1}!.closeFile()
-	default:	
+	default:
+
+# close<ofilehandleBinary>(<ofilehandleBinary>)
+close<ofilehandleBinary>(<ofilehandleBinary>) => void
+	cpp:		{1}.close()
+	java:		try {{1}.close();} catch (IOException ex) {}
+	js:         await new Promise((resolve, reject) => {{1}.end(() => resolve());{1}.on('error', reject);})
+	pl:			close({1})
+	py:			{1}.close()
+	swift:		{1}!.closeFile()
+	default:
 
 #deepCopy(<string>) => <string>
 deepCopy<string>(<string>) => <string>
@@ -2296,12 +2337,18 @@ deref(<any>) => <any>
 	rs:			*{1}
 	default:	{1}
 
+# unwrap(any)
+unwrap(<any>) => <any>
+	rs:			{1}.unwrap()
+	swift:		{1}!
+	default:	{1}
+
 # unwrapRust(any)
-unwrapSwift(<any>) => <any>
+unwrapRust(<any>) => <any>
 	rs:			{1}.unwrap()
 	default:	{1}
 
-# unwrap(any)
+# unwrapSwift(any)
 unwrapSwift(<any>) => <any>
 	swift:		{1}!
 	default:	{1}

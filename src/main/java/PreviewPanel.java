@@ -77,6 +77,10 @@ public class PreviewPanel extends JPanel {
         return scrollPane;
     }
 
+    public String getSelectedLanguageName() {
+        return LANGUAGES[langCombo.getSelectedIndex()];
+    }
+
     public void setEditorFont(Font font) {
         textArea.setFont(font);
         scrollPane.getGutter().setLineNumberFont(font);

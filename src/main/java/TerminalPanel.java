@@ -24,6 +24,7 @@ public class TerminalPanel extends JComponent implements Scrollable {
     private final byte[] attrs;      // [line * maxCols + col] = style bitmask
     private final int maxCols;
     private final int totalLines;    // scrollback + visible
+    private final java.util.Map<Integer, String> clusterMap = new java.util.HashMap<>(); // idx -> grapheme cluster string
 
     private static final byte ATTR_BOLD = 1;
     private static final byte ATTR_DIM = 2;
@@ -235,7 +236,9 @@ public class TerminalPanel extends JComponent implements Scrollable {
     public void write(String text) {
         bufferLock.lock();
         try {
-            for (int i = 0; i < text.length(); i++) {
+            int len = text.length();
+            int i = 0;
+            while (i < len) {
                 char c = text.charAt(i);
                 if (escBuf != null) {
                     escBuf.append(c);
@@ -243,24 +246,84 @@ public class TerminalPanel extends JComponent implements Scrollable {
                         processEscape(escBuf.toString());
                         escBuf = null;
                     }
+                    i++;
                     continue;
                 }
                 if (c == '\u001B') {
                     escBuf = new StringBuilder();
                     escBuf.append(c);
+                    i++;
                 } else if (c == '\r') {
                     cursorCol = 0;
+                    i++;
                 } else if (c == '\n') {
                     newLine();
+                    i++;
                 } else if (c == '\b') {
                     if (cursorCol > 0) cursorCol--;
+                    i++;
                 } else {
+                    // Collect full grapheme cluster (surrogate pairs, ZWJ sequences, regional indicators, variation selectors)
+                    int cp = Character.codePointAt(text, i);
+                    int charCount = Character.charCount(cp);
+                    int clusterStart = i;
+                    i += charCount;
+                    // Extend cluster for combining marks, ZWJ sequences, variation selectors, regional indicators
+                    while (i < len) {
+                        int nextCp = Character.codePointAt(text, i);
+                        int nextCharCount = Character.charCount(nextCp);
+                        if (nextCp == 0x200D) { // ZWJ
+                            i += nextCharCount;
+                            if (i < len) {
+                                nextCp = Character.codePointAt(text, i);
+                                nextCharCount = Character.charCount(nextCp);
+                                i += nextCharCount;
+                            }
+                        } else if (nextCp == 0xFE0F || nextCp == 0xFE0E) { // variation selectors
+                            i += nextCharCount;
+                        } else if (nextCp >= 0x20E3 && nextCp <= 0x20E3) { // combining enclosing keycap
+                            i += nextCharCount;
+                        } else if ((nextCp >= 0x1F3FB && nextCp <= 0x1F3FF)) { // skin tone modifiers
+                            i += nextCharCount;
+                        } else if (nextCp >= 0xE0020 && nextCp <= 0xE007F) { // tag sequences
+                            i += nextCharCount;
+                        } else if (cp >= 0x1F1E6 && cp <= 0x1F1FF && nextCp >= 0x1F1E6 && nextCp <= 0x1F1FF) {
+                            // Regional indicator pair (flag)
+                            i += nextCharCount;
+                        } else if (Character.getType(nextCp) == Character.NON_SPACING_MARK ||
+                                   Character.getType(nextCp) == Character.ENCLOSING_MARK ||
+                                   Character.getType(nextCp) == Character.COMBINING_SPACING_MARK) {
+                            i += nextCharCount;
+                        } else {
+                            break;
+                        }
+                    }
+                    String cluster = text.substring(clusterStart, i);
+                    // Store the first codepoint for buffer identity; render the full cluster
                     int idx = cursorRow * maxCols + cursorCol;
-                    chars[idx] = c;
+                    chars[idx] = cp;
                     colors[idx] = currentFg;
                     bgColors[idx] = currentBg;
                     attrs[idx] = currentAttrs;
+                    // If the cluster is multi-codepoint, store it in the cluster map
+                    if (cluster.length() > charCount || Character.charCount(cp) > 1) {
+                        clusterMap.put(idx, cluster);
+                    } else {
+                        clusterMap.remove(idx);
+                    }
                     cursorCol++;
+                    // Some emoji are double-width; advance an extra column
+                    if (isWideCharacter(cp)) {
+                        if (cursorCol < getVisibleCols()) {
+                            int idx2 = cursorRow * maxCols + cursorCol;
+                            chars[idx2] = 0;
+                            colors[idx2] = currentFg;
+                            bgColors[idx2] = currentBg;
+                            attrs[idx2] = currentAttrs;
+                            clusterMap.remove(idx2);
+                            cursorCol++;
+                        }
+                    }
                     if (cursorCol >= getVisibleCols()) {
                         cursorCol = 0;
                         newLine();
@@ -293,7 +356,37 @@ public class TerminalPanel extends JComponent implements Scrollable {
             colors[base + i] = termFg;
             bgColors[base + i] = null;
             attrs[base + i] = 0;
+            clusterMap.remove(base + i);
         }
+    }
+
+    private static boolean isWideCharacter(int cp) {
+        // Emoji and other characters that typically render double-width
+        return (cp >= 0x1F000 && cp <= 0x1FAFF) || // Emoticons, symbols, flags, etc.
+               (cp >= 0x2600 && cp <= 0x27BF) ||   // Misc symbols, dingbats
+               (cp >= 0x1F1E6 && cp <= 0x1F1FF) || // Regional indicators
+               (cp >= 0x231A && cp <= 0x23FF) ||    // Misc technical
+               (cp >= 0x2B50 && cp <= 0x2B55) ||    // Stars, circles
+               (cp >= 0xFE00 && cp <= 0xFE0F) ||    // Variation selectors (shouldn't appear standalone)
+               (cp >= 0x2702 && cp <= 0x27B0);      // Dingbats
+    }
+
+    private static Font emojiFallbackFont;
+
+    private static Font getEmojiFallbackFont(int size) {
+        if (emojiFallbackFont != null && emojiFallbackFont.getSize() == size) return emojiFallbackFont;
+        // Try platform-specific emoji fonts
+        String[] candidates = {"Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", "Noto Emoji"};
+        for (String name : candidates) {
+            Font f = new Font(name, Font.PLAIN, size);
+            if (!f.getFamily().equals(Font.DIALOG)) {
+                emojiFallbackFont = f;
+                return f;
+            }
+        }
+        // Fallback to any font that can display emoji
+        emojiFallbackFont = new Font(Font.SANS_SERIF, Font.PLAIN, size);
+        return emojiFallbackFont;
     }
 
     private void processEscape(String seq) {
@@ -399,6 +492,7 @@ public class TerminalPanel extends JComponent implements Scrollable {
                     colors[base + c] = termFg;
                     bgColors[base + c] = currentBg;
                     attrs[base + c] = 0;
+                    clusterMap.remove(base + c);
                 }
             }
         }
@@ -411,6 +505,7 @@ public class TerminalPanel extends JComponent implements Scrollable {
             java.util.Arrays.fill(colors, termFg);
             java.util.Arrays.fill(bgColors, (Color) null);
             java.util.Arrays.fill(attrs, (byte) 0);
+            clusterMap.clear();
             cursorRow = 0; cursorCol = 0;
             firstLine = 0; lineCount = 1;
             scrollOffset = 0;
@@ -560,9 +655,13 @@ public class TerminalPanel extends JComponent implements Scrollable {
                                 drawFont = drawFont.deriveFont(Font.BOLD | Font.ITALIC);
                             else if ((attr & ATTR_BOLD) != 0) drawFont = drawFont.deriveFont(Font.BOLD);
                             else if ((attr & ATTR_ITALIC) != 0) drawFont = drawFont.deriveFont(Font.ITALIC);
+                            String glyphStr = clusterMap.getOrDefault(idx, new String(Character.toChars(ch)));
+                            if (isWideCharacter(ch) || clusterMap.containsKey(idx)) {
+                                drawFont = getEmojiFallbackFont(drawFont.getSize());
+                            }
                             g2.setFont(drawFont);
                             g2.setColor(fg);
-                            g2.drawString(new String(Character.toChars(ch)), col * charWidth, y);
+                            g2.drawString(glyphStr, col * charWidth, y);
                             if ((attr & ATTR_UNDERLINE) != 0) {
                                 g2.drawLine(col * charWidth, y + 1, (col + 1) * charWidth, y + 1);
                             }

@@ -282,7 +282,7 @@ impl<T1: ElementFormatter, T2: ElementFormatter, T3: ElementFormatter, T4: Eleme
 macro_rules! list_to_string {
     ($list:expr) => {
         {
-            use utils::ElementFormatter;
+            use $crate::utils::ElementFormatter;
             $list.format()
         }
     };
@@ -291,7 +291,7 @@ macro_rules! list_to_string {
 macro_rules! map_to_string {
     ($map:expr) => {
         {
-            use utils::ElementFormatter;
+            use $crate::utils::ElementFormatter;
             $map.format()
         }
     };
@@ -300,7 +300,7 @@ macro_rules! map_to_string {
 macro_rules! tuple_to_string {
     ($tuple:expr) => {
         {
-            use utils::ElementFormatter;
+            use $crate::utils::ElementFormatter;
             $tuple.format()
         }
     };

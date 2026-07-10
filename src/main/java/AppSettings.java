@@ -42,6 +42,15 @@ public class AppSettings {
     public int mainDivider = -1;    // editor/terminal vertical split
     public int aiDivider = -1;      // main/AI horizontal split
     public int editorPreviewDivider = -1;  // editor/preview horizontal split
+    // Developer tool paths (empty string means auto-detect)
+    public String cppPath = "";
+    public String javaPath = "";
+    public String nodePath = "";
+    public String perlPath = "";
+    public String pythonPath = "";
+    public String rustPath = "";
+    public String swiftPath = "";
+
     public Color[] colors = {
         Color.BLACK,              // normal
         new Color(0, 0, 180),     // keyword
@@ -76,6 +85,13 @@ public class AppSettings {
             sb.append("  \"mainDivider\": ").append(mainDivider).append(",\n");
             sb.append("  \"aiDivider\": ").append(aiDivider).append(",\n");
             sb.append("  \"editorPreviewDivider\": ").append(editorPreviewDivider).append(",\n");
+            if (!cppPath.isEmpty()) sb.append("  \"cppPath\": \"").append(escape(cppPath)).append("\",\n");
+            if (!javaPath.isEmpty()) sb.append("  \"javaPath\": \"").append(escape(javaPath)).append("\",\n");
+            if (!nodePath.isEmpty()) sb.append("  \"nodePath\": \"").append(escape(nodePath)).append("\",\n");
+            if (!perlPath.isEmpty()) sb.append("  \"perlPath\": \"").append(escape(perlPath)).append("\",\n");
+            if (!pythonPath.isEmpty()) sb.append("  \"pythonPath\": \"").append(escape(pythonPath)).append("\",\n");
+            if (!rustPath.isEmpty()) sb.append("  \"rustPath\": \"").append(escape(rustPath)).append("\",\n");
+            if (!swiftPath.isEmpty()) sb.append("  \"swiftPath\": \"").append(escape(swiftPath)).append("\",\n");
             sb.append("  \"colors\": [");
             for (int i = 0; i < colors.length; i++) {
                 if (i > 0) sb.append(", ");
@@ -140,6 +156,21 @@ public class AppSettings {
             Integer epd = extractInt(json, "editorPreviewDivider");
             if (epd != null) s.editorPreviewDivider = epd;
 
+            String cpp = extractString(json, "cppPath");
+            if (cpp != null) s.cppPath = cpp;
+            String java = extractString(json, "javaPath");
+            if (java != null) s.javaPath = java;
+            String node = extractString(json, "nodePath");
+            if (node != null) s.nodePath = node;
+            String perl = extractString(json, "perlPath");
+            if (perl != null) s.perlPath = perl;
+            String python = extractString(json, "pythonPath");
+            if (python != null) s.pythonPath = python;
+            String rust = extractString(json, "rustPath");
+            if (rust != null) s.rustPath = rust;
+            String swift = extractString(json, "swiftPath");
+            if (swift != null) s.swiftPath = swift;
+
             List<String> colorList = extractArray(json, "colors");
             if (colorList != null) {
                 for (int i = 0; i < Math.min(colorList.size(), s.colors.length); i++) {
@@ -184,5 +215,147 @@ public class AppSettings {
             result.add(item.trim().replace("\"", ""));
         }
         return result;
+    }
+
+    /**
+     * Detect the path for a given tool by searching standard locations.
+     * Returns the absolute path if found, or empty string if not found.
+     */
+    public static String detectToolPath(String toolName) {
+        String os = System.getProperty("os.name", "").toLowerCase();
+        List<String> candidates = new ArrayList<>();
+
+        if (os.contains("mac")) {
+            // macOS: Homebrew (ARM + Intel), Xcode, system
+            switch (toolName) {
+                case "g++" -> {
+                    candidates.add("/opt/homebrew/bin/g++");
+                    candidates.add("/usr/local/bin/g++");
+                    candidates.add("/usr/bin/g++");
+                }
+                case "javac" -> {
+                    candidates.add("/opt/homebrew/bin/javac");
+                    candidates.add("/usr/local/bin/javac");
+                    candidates.add("/usr/bin/javac");
+                }
+                case "node" -> {
+                    candidates.add("/opt/homebrew/bin/node");
+                    candidates.add("/usr/local/bin/node");
+                }
+                case "perl" -> {
+                    candidates.add("/opt/homebrew/bin/perl");
+                    candidates.add("/usr/local/bin/perl");
+                    candidates.add("/usr/bin/perl");
+                }
+                case "python3" -> {
+                    candidates.add("/opt/homebrew/bin/python3");
+                    candidates.add("/usr/local/bin/python3");
+                    candidates.add("/usr/bin/python3");
+                }
+                case "rustc" -> {
+                    candidates.add(System.getProperty("user.home") + "/.cargo/bin/rustc");
+                    candidates.add("/opt/homebrew/bin/rustc");
+                    candidates.add("/usr/local/bin/rustc");
+                }
+                case "swiftc" -> {
+                    candidates.add("/usr/bin/swiftc");
+                    candidates.add("/opt/homebrew/bin/swiftc");
+                }
+            }
+        } else if (os.contains("win")) {
+            // Windows: common install locations
+            switch (toolName) {
+                case "g++" -> {
+                    candidates.add("C:\\msys64\\ucrt64\\bin\\g++.exe");
+                    candidates.add("C:\\msys64\\mingw64\\bin\\g++.exe");
+                    candidates.add("C:\\MinGW\\bin\\g++.exe");
+                }
+                case "javac" -> {
+                    candidates.add("C:\\Program Files\\Java\\jdk-21\\bin\\javac.exe");
+                    candidates.add("C:\\Program Files\\Eclipse Adoptium\\jdk-21\\bin\\javac.exe");
+                }
+                case "node" -> {
+                    candidates.add("C:\\Program Files\\nodejs\\node.exe");
+                }
+                case "perl" -> {
+                    candidates.add("C:\\Strawberry\\perl\\bin\\perl.exe");
+                    candidates.add("C:\\Perl\\bin\\perl.exe");
+                }
+                case "python3" -> {
+                    candidates.add(System.getProperty("user.home") + "\\AppData\\Local\\Programs\\Python\\Python312\\python.exe");
+                    candidates.add(System.getProperty("user.home") + "\\AppData\\Local\\Programs\\Python\\Python311\\python.exe");
+                    candidates.add("C:\\Python312\\python.exe");
+                    candidates.add("C:\\Python311\\python.exe");
+                }
+                case "rustc" -> {
+                    candidates.add(System.getProperty("user.home") + "\\.cargo\\bin\\rustc.exe");
+                }
+                case "swiftc" -> {
+                    candidates.add("C:\\Library\\Developer\\Toolchains\\unknown-Asserts-development.xctoolchain\\usr\\bin\\swiftc.exe");
+                }
+            }
+        } else {
+            // Linux
+            switch (toolName) {
+                case "g++" -> {
+                    candidates.add("/usr/bin/g++");
+                    candidates.add("/usr/local/bin/g++");
+                }
+                case "javac" -> {
+                    candidates.add("/usr/bin/javac");
+                    candidates.add("/usr/local/bin/javac");
+                }
+                case "node" -> {
+                    candidates.add("/usr/bin/node");
+                    candidates.add("/usr/local/bin/node");
+                }
+                case "perl" -> {
+                    candidates.add("/usr/bin/perl");
+                    candidates.add("/usr/local/bin/perl");
+                }
+                case "python3" -> {
+                    candidates.add("/usr/bin/python3");
+                    candidates.add("/usr/local/bin/python3");
+                }
+                case "rustc" -> {
+                    candidates.add(System.getProperty("user.home") + "/.cargo/bin/rustc");
+                    candidates.add("/usr/bin/rustc");
+                    candidates.add("/usr/local/bin/rustc");
+                }
+                case "swiftc" -> {
+                    candidates.add("/usr/bin/swiftc");
+                    candidates.add("/usr/local/bin/swiftc");
+                }
+            }
+        }
+
+        for (String path : candidates) {
+            if (Files.isExecutable(Path.of(path))) {
+                return path;
+            }
+        }
+        return "";
+    }
+
+    /**
+     * Get the effective path for a tool. If the user has configured a path, use it.
+     * Otherwise, try to auto-detect it. If that fails, return the bare command name
+     * (which will rely on PATH resolution at runtime).
+     */
+    public String getEffectiveToolPath(String toolName) {
+        String configured = switch (toolName) {
+            case "g++" -> cppPath;
+            case "javac" -> javaPath;
+            case "node" -> nodePath;
+            case "perl" -> perlPath;
+            case "python3" -> pythonPath;
+            case "rustc" -> rustPath;
+            case "swiftc" -> swiftPath;
+            default -> "";
+        };
+        if (configured != null && !configured.isEmpty()) return configured;
+        String detected = detectToolPath(toolName);
+        if (!detected.isEmpty()) return detected;
+        return toolName; // fallback to bare command name
     }
 }

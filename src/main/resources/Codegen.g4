@@ -115,15 +115,15 @@ lvalue:        variable                                 # VariableLValue
                ;
 
 scalarInit:    newID ('=' expr)? ;
-scalarDecl:    isStatic=STATIC? isFinal=FINAL? isFinalOpt=FINAL_OPT? scalarType (','? scalarInit)+ ;
-listDecl:      isStatic=STATIC? isFinal=FINAL? listType newID (':=' exprList)? ;
-listDecl2:     isStatic=STATIC? isFinal=FINAL? listType newID '=' expr ;
-listDecl3:     isStatic=STATIC? isFinal=FINAL? listType newID '[' expr ']' ;
-mapDecl:       isStatic=STATIC? isFinal=FINAL? mapType newID (':=' NL? mapExprList)? ;
-mapDecl2:      isStatic=STATIC? isFinal=FINAL? mapType newID '=' expr ;
-tupleDecl:     isStatic=STATIC? isFinal=FINAL? tupleType newID (':=' exprList)? ;
-tupleDecl2:    isStatic=STATIC? isFinal=FINAL? tupleType newID '=' expr ;
-userTypeDecl:  isStatic=STATIC? isFinal=FINAL? userType (','? scalarInit)+ ;
+scalarDecl:    isStatic=STATIC? isFinal=FINAL? isFinalOpt=FINAL_OPT? isLet=LET? scalarType (','? scalarInit)+ ;
+listDecl:      isStatic=STATIC? isFinal=FINAL? isLet=LET? listType newID (':=' exprList)? ;
+listDecl2:     isStatic=STATIC? isFinal=FINAL? isLet=LET? listType newID '=' expr ;
+listDecl3:     isStatic=STATIC? isFinal=FINAL? isLet=LET? listType newID '[' expr ']' ;
+mapDecl:       isStatic=STATIC? isFinal=FINAL? isLet=LET? mapType newID (':=' NL? mapExprList)? ;
+mapDecl2:      isStatic=STATIC? isFinal=FINAL? isLet=LET? mapType newID '=' expr ;
+tupleDecl:     isStatic=STATIC? isFinal=FINAL? isLet=LET? tupleType newID (':=' exprList)? ;
+tupleDecl2:    isStatic=STATIC? isFinal=FINAL? isLet=LET? tupleType newID '=' expr ;
+userTypeDecl:  isStatic=STATIC? isFinal=FINAL? isLet=LET? userType (','? scalarInit)+ ;
 
 objectRef:     isAwait=AWAIT? isTry=TRY? object '.' functionCall   # objectMethodAccess
                | object '.' existingID forceUnwrap='!'?            # objectMemberAccess
@@ -233,6 +233,7 @@ AWAIT        : 'await' ;
 STATIC       : 'static' ;
 FINAL        : 'const' | 'final';
 FINAL_OPT    : 'Const' | 'Final';
+LET          : 'let' ;
 INOUT        : 'inout' ;
 TRY          : 'try' ;
 BOOLEAN      : 'true'|'false' ;

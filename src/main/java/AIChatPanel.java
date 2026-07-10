@@ -21,6 +21,7 @@ public class AIChatPanel extends JPanel {
     private final JTextArea inputArea;
     private final JButton sendBtn;
     private final RSyntaxTextArea codeEditor;
+    private final PreviewPanel previewPanel;
     private final TerminalPanel console;
     private final AppSettings settings;
     private final List<Map<String, String>> messages = new ArrayList<>();
@@ -35,9 +36,10 @@ public class AIChatPanel extends JPanel {
     private int aiPromptCount = 0;
     private float pulseAlpha = 0f;
 
-    public AIChatPanel(RSyntaxTextArea codeEditor, TerminalPanel console, AppSettings settings) {
+    public AIChatPanel(RSyntaxTextArea codeEditor, PreviewPanel previewPanel, TerminalPanel console, AppSettings settings) {
         super(new BorderLayout());
         this.codeEditor = codeEditor;
+        this.previewPanel = previewPanel;
         this.console = console;
         this.settings = settings;
         this.systemPrompt = buildSystemPrompt();
@@ -104,8 +106,10 @@ public class AIChatPanel extends JPanel {
         this.statusUpdater = () -> {
             int sp = systemPrompt.length();
             int prog = codeEditor.getText().length();
+            String pv = previewPanel.getTextArea().getText();
+            int preview = (pv != null && !pv.startsWith("// No generated")) ? pv.length() : 0;
             int out = console.getText().length();
-            statusBar.setText(String.format("LLM System Prompt: %,d chars    Current Program: %,d chars    Current Output: %,d chars", sp, prog, out));
+            statusBar.setText(String.format("<html>LLM System Prompt: %,d chars &nbsp;&nbsp; Current Program: %,d chars<br>Preview Program: %,d chars &nbsp;&nbsp; Current Output: %,d chars</html>", sp, prog, preview, out));
         };
         statusUpdater.run();
 
@@ -155,7 +159,10 @@ public class AIChatPanel extends JPanel {
             SplashScreen.show();
         }
 
+        String previewCode = previewPanel.getTextArea().getText();
         String context = "Current source code:\n```\n" + codeEditor.getText() + "\n```\n\n"
+            + (previewCode != null && !previewCode.isEmpty() && !previewCode.startsWith("// No generated")
+                ? "Generated " + previewPanel.getSelectedLanguageName() + " code:\n```\n" + previewCode + "\n```\n\n" : "")
             + "Console output:\n```\n" + console.getText() + "\n```";
 
         if (messages.isEmpty()) {

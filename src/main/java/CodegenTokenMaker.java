@@ -37,7 +37,7 @@ public class CodegenTokenMaker extends AbstractTokenMaker {
     // Type/modifier keywords
     private static final Set<String> TYPE_KEYWORDS = Set.of(
         "void", "auto", "async", "await", "static", "const", "final",
-        "Const", "Final", "inout", "try", "true", "false", "new",
+        "Const", "Final", "let", "inout", "try", "true", "false", "new",
         "in", "extends", "implements", "throws"
     );
 

@@ -2,7 +2,6 @@ module.exports = {
     sprintf: require('sprintf-js').sprintf,
     fs: require('fs'),
     readline: require('readline'),
-    prompts: require('prompts'),
     child_process: require("child_process"),
     util: require('util'),
 
@@ -178,17 +177,20 @@ module.exports = {
         });
     },
 
-    getbyteSync: function(fd) {
-        var byte_buffer = new Uint8Array(1);
-        var bytes_read = module.exports.fs.readSync(fd, byte_buffer);
-        return bytes_read == 0 ? -1 : byte_buffer[0];
+    putbyte: function(byte, ostream) {
+        var byte_buffer = Buffer.from([byte]);
+        ostream.write(byte_buffer);
     },
 
-    putbyteSync: function(byte, fd) {
-        var byte_buffer = new Uint8Array(1);
-        byte_buffer[0] = byte;
-        var bytes_written = module.exports.fs.writeSync(fd, byte_buffer);
-        return bytes_written;
+    putbyteSync: function(byte, ostream) {
+        var byte_buffer = Buffer.from([byte]);
+        return new Promise((resolve, reject) => {
+            if (!ostream.write(byte_buffer)) {
+                ostream.once('drain', resolve);
+            } else {
+                resolve();
+            }
+        });
     },
 
     getbyte: async function(istream) {
@@ -196,7 +198,7 @@ module.exports = {
         var bytesRead = 0;
         var buf = Buffer.alloc(1);
         try {
-            bytesRead = module.exports.fs.readSync(istream.fd, buf, 0, 1);
+            bytesRead = module.exports.fs.readSync(fd, buf, 0, 1);
         } catch (e) {
             if (e.code === 'EAGAIN') { // 'resource temporarily unavailable'
                 // Happens on OS X 10.8.3 (not Windows 7!), if there's no
@@ -226,7 +228,13 @@ module.exports = {
         }
         return Promise.resolve(c);
     },
-    
+
+    getbyteSync: function(istream) {
+        var byte_buffer = new Uint8Array(1);
+        var bytes_read = module.exports.fs.readSync(istream.fd, byte_buffer);
+        return bytes_read == 0 ? -1 : byte_buffer[0];
+    },
+
     getchar: async function(stream) {
         if (module.exports.getcharGen === undefined) {
             module.exports.getcharGen = new Map();
@@ -263,6 +271,24 @@ module.exports = {
         for await (const line of rl) {
             yield line;
         }
+    },
+
+    fread: function(buffer, BUFFER_SIZE, istream) {
+        return new Promise(async (resolve, reject) => {
+            const fd = await module.exports.getFD(istream);
+            let bytesRead = 0;
+            const tryRead = () => {
+                module.exports.fs.read(fd, buffer, bytesRead, BUFFER_SIZE - bytesRead, null,
+                    (err, read) => {
+                        if (err) return reject(err);
+                        if (read === 0) return resolve(bytesRead);
+                        bytesRead += read;
+                        if (bytesRead < BUFFER_SIZE) tryRead();
+                        else resolve(bytesRead);
+                    });
+            };
+            tryRead();
+        });
     },
 
     filesize: function(filepath) {
@@ -394,12 +420,8 @@ module.exports = {
     },
 
     prompt: async function(question) {
-//        process.stdout.write(question);
-//        module.exports.readline.clearLine(process.stdout, true);  // Helps with redirecting input
-//        return await module.exports.getline();
-        var properties = {message: question, name: 'answer', type: 'text'};
-        const response = await module.exports.prompts(properties);
-        return response.answer;
+        process.stdout.write(question);
+        return await module.exports.getline(process.stdin);
     },
 
     stoi: function(s) {
