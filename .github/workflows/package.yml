@@ -208,7 +208,7 @@ jobs:
                 dpkg-deb -R "$DEB_FILE" "$TMPDIR"
                 sed -i 's/^Depends:.*/Depends: xdg-utils/' "$TMPDIR/DEBIAN/control"
                 # Ensure StartupWMClass matches what the JVM reports
-                DESKTOP_FILE=$(find "$TMPDIR" -name "*.desktop" | head -1)
+                DESKTOP_FILE=$(find "$TMPDIR" -type f -name "*.desktop" | head -1)
                 if [ -n "$DESKTOP_FILE" ]; then
                   if ! grep -q "^StartupWMClass=" "$DESKTOP_FILE"; then
                     sed -i '/^\[Desktop Entry\]/a StartupWMClass=codegenide-CodegenApp' "$DESKTOP_FILE"
@@ -225,7 +225,7 @@ jobs:
             if [ "${{ matrix.pkg_type }}" = "rpm" ]; then
               # For RPM, we need to patch the app-image desktop file before packaging
               # The desktop file should already be handled by jpackage, but verify
-              DESKTOP_FILE=$(find CodegenIDE -name "*.desktop" 2>/dev/null | head -1)
+              DESKTOP_FILE=$(find CodegenIDE -type f -name "*.desktop" 2>/dev/null | head -1)
               if [ -n "$DESKTOP_FILE" ]; then
                 if ! grep -q "^StartupWMClass=" "$DESKTOP_FILE"; then
                   sed -i '/^\[Desktop Entry\]/a StartupWMClass=codegenide-CodegenApp' "$DESKTOP_FILE"
