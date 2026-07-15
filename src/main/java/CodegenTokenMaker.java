@@ -1,6 +1,8 @@
 import org.fife.ui.rsyntaxtextarea.*;
 import javax.swing.text.Segment;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
+import java.util.regex.*;
 
 /**
  * Custom TokenMaker for Codegen language syntax highlighting
@@ -41,13 +43,34 @@ public class CodegenTokenMaker extends AbstractTokenMaker {
         "in", "extends", "implements", "throws"
     );
 
-    // Built-in functions
-    private static final Set<String> BUILTINS = Set.of(
-        "format", "string", "char", "byte", "short", "int", "long",
-        "int16", "int32", "int64", "double",
-        "isNull", "listsize", "mapsize", "mapkeys", "mapkeysAsList",
-        "IRANGE", "FRANGE", "XRANGE"
-    );
+    // Built-in functions (loaded from codegen_funcs.txt)
+    private static final Set<String> BUILTINS = loadBuiltins();
+
+    private static Set<String> loadBuiltins() {
+        Set<String> builtins = new HashSet<>(Set.of(
+            "format", "string", "char", "byte", "short", "int", "long",
+            "int16", "int32", "int64", "double",
+            "isNull", "listsize", "mapsize", "mapkeys", "mapkeysAsList",
+            "IRANGE", "FRANGE", "XRANGE"
+        ));
+        // Parse macro function names from codegen_funcs.txt
+        // Lines like: function_name(args) => return_type
+        Pattern funcPattern = Pattern.compile("^([a-zA-Z_][a-zA-Z0-9_]*)\\(");
+        try (InputStream in = CodegenTokenMaker.class.getResourceAsStream("/codegen_funcs.txt")) {
+            if (in == null) return builtins;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.isEmpty() || line.startsWith("#") || line.startsWith("\t")) continue;
+                    Matcher m = funcPattern.matcher(line);
+                    if (m.find()) {
+                        builtins.add(m.group(1));
+                    }
+                }
+            }
+        } catch (IOException ignored) {}
+        return Collections.unmodifiableSet(builtins);
+    }
 
     // Comparison operator keywords
     private static final Set<String> OPERATORS = Set.of(
@@ -134,9 +157,9 @@ public class CodegenTokenMaker extends AbstractTokenMaker {
                     } else if (c == '<' && i + 1 < end && (Character.isLetter(array[i + 1]) || array[i + 1] == '_')) {
                         // Type annotation <type>
                         currentTokenType = Token.VARIABLE;
-                    } else if (c == '[' || c == '{' || c == '\u00AB') {
-                        // List/map/tuple type annotations [type] {type} «type»
-                        addToken(text, currentTokenStart, i, Token.VARIABLE, newStartOffset + currentTokenStart);
+                    } else if (c == '[' || c == ']' || c == '{' || c == '}' || c == '\u00AB' || c == '\u00BB') {
+                        // Brackets and braces — treat as normal punctuation (no highlighting)
+                        addToken(text, currentTokenStart, i, Token.IDENTIFIER, newStartOffset + currentTokenStart);
                         currentTokenType = Token.NULL;
                     } else if (Character.isDigit(c)) {
                         currentTokenType = Token.LITERAL_NUMBER_DECIMAL_INT;

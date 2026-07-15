@@ -18,6 +18,7 @@ build_header(<string>) => <string>
 	default:	Utils.buildHeader({1})
 	cpp:		Utils::buildHeader({1})
 	pl:			Utils::buildHeader({1})
+	rs:			utils::buildHeader({1})
 
 # pass used by Python for NOP
 pass() => void
@@ -63,13 +64,13 @@ ternary(<any>, <any>, <any>) => <any>
 	py:			{2} if {1} else {3} 
 	
 # defined(Any)
-defined(<any>) => <bool>
+defined(any) => <bool>
 	cpp:		Utils::defined({1})
 	java:		Utils.defined({1})
 	js:			Utils.defined({1})
 	pl:			defined({1})
 	py:			Utils.defined({1})
-	rs:			{1} != None
+	rs:			true
 	swift:		Utils.defined({1})
 
 # isfinite(x)
@@ -80,6 +81,7 @@ isfinite(<double>) => <bool>
 	pl:			isFinite({1})
 	py:			math.isfinite({1})
 	pyRequire:	import math
+	rs:			({1}).is_finite()
 	swift:		({1}).isFinite
 
 # exit(<int>) Exit program with return code
@@ -181,7 +183,7 @@ String(<any>) => <string>
 	default:	{1}
 
 #global(<any>)	Declare variable in global scope inside functions for Python
-global(<any>) => void
+global(any) => void
 	py:			global {1}
 	default:	
 
@@ -262,6 +264,7 @@ tobase(<int>, <int>) => <string>
 	cpp:		Utils::toBase<char>({1}, {2})
 	cppU:		Utils::toBase<wchar_t>({1}, {2})
 	pl:			Utils::toBase({1}, {2})
+	rs:			utils::toBase({1}, {2})
 	swift:		Utils.toBase({1}, base: {2})
 
 # frombase(string, base) convert from the specified base (2-16)
@@ -276,26 +279,31 @@ padalign(<string>, <int>, <any>, <char>, <string>, <string>) => <string>
 	default:	Utils.padAlign({1}, {2}, Utils.PadAlignType.{3}, {4}, {5}, {6})
 	cpp:		Utils::padAlign({1}, {2}, Utils::PadAlignType::{3}, {4}, {5}, {6})
 	pl:			Utils::padAlign({1}, {2}, $Utils::PadAlignType{{3}}, {4}, {5}, {6})
+	rs:		    utils::padAlign({1}, {2}, utils::PadAlignType::{3}, {4}, Some({5}), Some({6}))
 	swift:		Utils.padAlign({1}, {2}, align: Utils.PadAlignType.{3}, padWith: {4}, prefix: {5}, prefix_front: {6})
 padalign@5(<string>, <int>, <any>, <char>, <string>) => <string>
 	default:	Utils.padAlign({1}, {2}, Utils.PadAlignType.{3}, {4}, {5})
 	cpp:		Utils::padAlign({1}, {2}, Utils::PadAlignType::{3}, {4}, {5})
 	pl:			Utils::padAlign({1}, {2}, $Utils::PadAlignType{{3}}, {4}, {5})
+	rs:		    utils::padAlign({1}, {2}, utils::PadAlignType::{3}, {4}, Some({5}), None)
 	swift:		Utils.padAlign({1}, {2}, align: Utils.PadAlignType.{3}, padWith: {4}, prefix: {5})
 padalign@4(<string>, <int>, <any>, <char>) => <string>
 	default:	Utils.padAlign({1}, {2}, Utils.PadAlignType.{3}, {4})
 	cpp:		Utils::padAlign({1}, {2}, Utils::PadAlignType::{3}, {4})
 	pl:			Utils::padAlign({1}, {2}, $Utils::PadAlignType{{3}}, {4})
+	rs:		    utils::padAlign({1}, {2}, utils::PadAlignType::{3}, {4}, None, None)
 	swift:		Utils.padAlign({1}, {2}, align: Utils.PadAlignType.{3}, padWith: {4})
 padalign@3(<string>, <int>, <any>) => <string>
 	default:	Utils.padAlign({1}, {2}, Utils.PadAlignType.{3})
 	cpp:		Utils::padAlign({1}, {2}, Utils::PadAlignType::{3})
 	pl:			Utils::padAlign({1}, {2}, $Utils::PadAlignType{{3}})
+	rs:		    utils::padAlign({1}, {2}, utils::PadAlignType::{3}, " ", None, None)
 	swift:		Utils.padAlign({1}, {2}, align: Utils.PadAlignType.{3})
 padalign@2(<string>, <int>) => <string>
 	default:	Utils.padAlign({1}, {2})
 	cpp:		Utils::padAlign({1}, {2})
 	pl:			Utils::padAlign({1}, {2})
+	rs:			utils::padAlign({1}, {2}, utils::PadAlignType::LEFT, " ", None, None)
 
 # All args will be in {0}
 # simple_message_format(FormatString, varargs...)
@@ -305,17 +313,12 @@ simple_message_format(<string>,...) => <string>
 	pl:			Utils::simpleMessageFormat({0})
 	rs:			format!({0})
 
-# ... will be in {-1}
-# All args will be in {0}
-# format(FormatString, varargs...)
-# deprecated.  Use built-in format()
-format(<string>,...) => <string>
-	cpp:		fmt::format({0})
-	cppRequire: #include <fmt/format.h>
-	pl:			Utils::messageFormat({0})
-	py:			{1}.format({-1})
-	rs:			format!({0})
-	default:	Utils.format({0})
+# Converts an optional to a string
+# optionalToString(Optional)
+optionalToString(<optional>) => <string>
+	default:	{1}
+	rs:			{1}.unwrap_or_else(o"<None>").to_string()
+	swift:		String({1} ?? "<Nil>")
 
 # All args will be in {0}
 # sprintf(FormatString, varargs...)
@@ -326,6 +329,7 @@ sprintf(<string>,...) => <string>
 	jsRequire:	const sprintf = require('sprintf-js').sprintf;
 	pl:			sprintf({0})
 	py:			Utils.sprintf({0})
+	rs:			sprintf::sprintf!({0}).unwrap()
 	swift:		String(format:{0})
 
 # All args will be in {0}
@@ -334,10 +338,12 @@ printf(<string>,...) => <string>
 	cpp:		printf({0})
 	cppU:		wprintf({0})
 	java:		System.out.printf({0})
-	js:			console.log({0})
+	js:			process.stdout.write(sprintf({0}))
+	jsRequire:	const sprintf = require('sprintf-js').sprintf;
 	pl:			printf({0})
 	py:			Utils.printf({0})
-	swift:		print(String(format:{0}))
+	rs:			print!("{}", sprintf::sprintf!({0}).unwrap())
+	swift:		print(String(format:{0}), terminator: "")
 
 # strlen(string)
 strlen(<string>) => <int>
@@ -346,6 +352,7 @@ strlen(<string>) => <int>
 	js:			Utils.cpLength({1})
 	pl:			length({1})
 	py:			len({1})
+	rs:			{1}.chars().count()
 	swift:		{1}.count
 
 # char_at(string, int)	 # int for C++ and Java, otherwise string
@@ -353,7 +360,8 @@ char_at(<string>, <int>) => <char>
 	java:		Utils.uniAt({1}, {2})
 	js:			Utils.uniAt({1}, {2})
 	pl:			substr({1}, {2}, 1)
-	swift:		Utils.substr({1}, {2}, {2} + 1)
+	rs:			{1}.chars().nth({2}).unwrap() as char
+	swift:		Character(Utils.substr({1}, {2}, {2} + 1))
 	default:	{1}[{2}]
 
 # codepoint_at(string, int)
@@ -363,7 +371,7 @@ codepoint_at(<string>, <int>) => <codepoint_t>
 	js:			Utils.cpAt({1}, {2})
 	pl:			ord(substr({1}, {2}, 1))
 	py:			ord({1}[{2}])
-	rs:			{1}[{2}]
+	rs:			{1}.chars().nth({2}).unwrap() as u32
 	swift:		Utils.codepoint_at({1}, {2})
 
 # substr(string, start, end)
@@ -373,6 +381,7 @@ substr(<string>, <int>, <int>) => <string>
 	js:			Utils.cpSubstr({1}, {2}, {3} - {2})
 	pl:			substr({1}, {2}, {3} - {2})
 	py:			{1}[{2}:{3}]
+	rs:         {1}.chars().skip({2}).take({3} - {2}).collect::<String>()
 	swift:		Utils.substr({1}, {2}, {3})
 
 # substrByLen(string, start, length)
@@ -382,6 +391,7 @@ substrByLen(<string>, <int>, <int>) => <string>
 	js:			Utils.cpSubstr({1}, {2}, {3})
 	pl:			substr({1}, {2}, {3})
 	py:			{1}[{2}:{2} + {3}]
+	rs:         {1}.chars().skip({2}).take({3}).collect::<String>()
 	swift:		Utils.substr({1}, {2}, {2} + {3})
 
 # prefix(string, count)
@@ -391,15 +401,17 @@ prefix(<string>, <int>) => <string>
 	js:			Utils.cpSubstr({1}, 0, {2})
 	pl:			substr({1}, 0, {2})
 	py:			{1}[0:{2}]
+	rs:         {1}.chars().take({2}).collect::<String>()
 	swift:		{1}.prefix({2})
 
-# right_tail(string, count)
+# right_tail(string, position)
 right_tail(<string>, <int>) => <string>
 	cpp:		{1}.substr({2})
 	java:		Utils.cpSubstring({1}, {2})
 	js:			Utils.cpSubstr({1}, {2})
 	pl:			substr({1}, {2})
 	py:			{1}[{2}:]
+	rs:         {1}.chars().skip({2}).collect::<String>()
 	swift:		Utils.substr({1}, {2})
 
 # suffix(string, count)
@@ -409,6 +421,7 @@ suffix(<string>, <int>) => <string>
 	js:			Utils.cpSubstr({1}, Utils.cpLength({1}) - {2})
 	pl:			substr({1}, -{2})
 	py:			{1}[len({1}) - {2}:]
+	rs:         {1}.chars().skip({1}.chars().count() - {2}).collect::<String>()
 	swift:		{1}.suffix({2})
 #	swift:		Utils.substr({1}, {1}.count - {2})
 
@@ -420,6 +433,7 @@ find<string><codepoint_t>(<string>, <codepoint_t>) => <int>
 	js:			Utils.cpIndexOf({1}, {2})
 	pl:			index({1}, chr({2}))
 	py:			{1}.find(chr({2}))
+	rs:         utils::find_char({1}, chr({2}))
 	swift:		{1}.indexOf(Utils.chr({2}))
 
 # Find last occurrence of string
@@ -430,6 +444,7 @@ rfind<string><codepoint_t>(<string>, <codepoint_t>) => <int>
 	js:			Utils.cpLastIndexOf({1}, {2})
 	pl:			rindex({1}, chr({2}))
 	py:			{1}.rfind(chr({2}))
+	rs:         utils::rfind_char({1}, chr({2}))
 	swift:		{1}.lastIndexOf(Utils.chr({2}))
 
 # Find first occurrence of string
@@ -440,6 +455,7 @@ find(<string>, <string>) => <int>
 	js:			Utils.cpIndexOf({1}, {2})
 	pl:			index({1}, {2})
 	py:			{1}.find({2})
+	rs:         utils::find_str({1}, {2})
 	swift:		{1}.indexOf({2})
 
 # Find last occurrence of string
@@ -450,6 +466,7 @@ rfind(<string>, <string>) => <int>
 	js:			Utils.cpLastIndexOf({1}, {2})
 	pl:			rindex({1}, {2})
 	py:			{1}.rfind({2})
+	rs:         utils::rfind_str({1}, {2})
 	swift:		{1}.lastIndexOf({2})
 
 # compare(string, string)	- less than, 0 equal, + greater than
@@ -459,6 +476,7 @@ compareto(<string>, <string>) => <int>
 	js:			{1}.localeCompare({2})
 	pl:			{1} cmp {2}
 	py:			Utils.compareTo({1}, {2})
+	rs:         {1}.cmp({2}) as i32
 	swift:		Utils.compareTo({1}, {2})
 
 # regex(string)
@@ -602,6 +620,7 @@ utf8mode(<any>) => void
 #
 # whereas for Rust
 #	ScalarDecl: <getbyte_t>? c
+#   Statement: @@@let mut ifh:BufReader<std::io::Stdin> = std::io::BufReader::new(std::io::stdin())@@@
 #	Statement: getbyte(c, ifh)
 #	BeginWhile: c != None
 #		PrintLine: c!
@@ -632,6 +651,7 @@ getbyte@2(<getbyte_t>?, <ifilehandleBinary>) => <bool>
 	pl:		defined({1} = Utils::getbyte(*{2}))
 	py:		{1} = Utils.getbyte({2})
 	rs:		{1} = utils::get_byte(&mut {2})
+	rsRequire:	use std::io::{BufReader};
 	swift:	{1} = Utils.getbyte({2})
 
 getbyteNoCheck(<getbyte_t>?, <ifilehandleBinary>) => void
@@ -674,7 +694,7 @@ getcodepoint(<codepoint_t>?) => <bool>
 	py:			{1} = Utils.getchar(!STDIN!)
 #	py:			{1} = readchar()
 #	pyRequire:	import readchar
-	rs:			{1} = utils::get_codepoint(!STDIN!)
+	rs:			{1} = utils::get_codepoint(&mut !STDIN!)
 # Compare to EOF for end of file
 	swift:		{1} = Utils.getchar()
 
@@ -703,14 +723,14 @@ getcodepoint@2(<codepoint_t>?, <ifilehandle>) => <bool>
 #
 # whereas for Rust
 #	ScalarDecl: <string> line = ""
-#	BeginWhile: getline(line, ifh)?
-#		Assign: line = line.trim_end().to_string()
+#	BeginWhile: getline(line)
+#       Assign: line = line.trim_end()
 #		...
 #		Statement: line.clear()
 #	EndWhile
 #
 # whereas other languages loops are simply
-#	ScalarDecl: <string> line
+#	ScalarDecl: <string> line?
 #	BeginWhile: getline(<s>)
 #		...
 #	EndWhile
@@ -727,7 +747,6 @@ getline(<string>) => <bool>
 	pl:			{1} = <!STDIN!>
 	py:			{1} = Utils.getline(!STDIN!)
 	rs:			!STDIN!.read_line(&mut {1}).unwrap_or(0) != 0
-	rsRequire:	use std::io::{BufRead};
 # returns optional
 	swift:		{1} = (readLine(strippingNewline: !TRUE!))
 
@@ -742,7 +761,7 @@ getline@2(<string>, <ifilehandle>) => <bool>
 	pl:			{1} = <{2}>
 	py:			{1} = Utils.getline({2})
 	rs:			{2}.read_line(&mut {1}).unwrap_or(0) != 0
-	rsRequire:	use std::io::{BufRead};
+	rsRequire:	use std::io::{BufReader};
 # returns optional
 	swift:		{1} = {2}.getLine()
 
@@ -936,6 +955,7 @@ ord(<char>) => <codepoint_t>
 
 ord<char*>(<char*>) => <codepoint_t>
 	cpp:		int({1}[0])
+	rs:			{1}.chars().nth(0).unwrap() as u32
 
 # CodePoint for first character of a string
 # ord<string>(<string>)
@@ -945,7 +965,7 @@ ord<string>(<string>) => <codepoint_t>
 	js:			{1}.codePointAt(0)
 	pl:			ord({1})
 	py:			ord({1}[0])
-	rs:			u32(char_at({1}, 0))
+	rs:			{1}.chars().nth(0).unwrap() as u32
 #	swift:		{1}.unicodeScalarCodePoint()
 	swift:		Utils.ord({1})
 	
@@ -1190,6 +1210,7 @@ toupper<string>(<string>) => <string>
 	js:			{1}.toUpperCase()
 	pl:			uc({1})
 	py:			{1}.upper()
+	rs:			{1}.to_uppercase()
 	swift:		{1}.uppercased()
 
 # tolower(<char>)
@@ -1223,6 +1244,7 @@ tolower<string>(<string>) => <string>
 	js:			{1}.toLowerCase()
 	pl:			lc({1})
 	py:			{1}.lower()
+	rs:			{1}.to_lowercase()
 	swift:		{1}.lowercased()
 
 # stoi(<string>) throws number_format_exception
@@ -1285,6 +1307,7 @@ ltrim(<string>) => <string>
 	cpp:		Utils::ltrim({1})
 	pl:			Utils::ltrim({1})
 	py:			{1}.lstrip()
+	rs:			{1}.trim_start().to_string()
 	default:	Utils.ltrim({1})
 
 # rtrim(<string>)
@@ -1292,6 +1315,7 @@ rtrim(<string>) => <string>
 	cpp:		Utils::rtrim({1})
 	pl:			Utils::rtrim({1})
 	py:			{1}.rstrip()
+	rs:			{1}.trim_end().to_string()
 	default:	Utils.rtrim({1})
 
 # trim(<string>)
@@ -1299,18 +1323,21 @@ trim(<string>) => <string>
 	cpp:		Utils::trim({1})
 	pl:			Utils::trim({1})
 	py:			{1}.strip()
+	rs:			{1}.trim().to_string()
 	default:	Utils.trim({1})
 
 # isempty(<string>)
 isempty(<string>) => <bool>
 	cpp:		{1}.empty()
 	pl:			Utils::isEmpty({1})
+	rs:			{1}.is_empty()
 	default:	Utils.isEmpty({1})
 
 # isblank(<string>)
 isblank(<string>) => <bool>
 	cpp:		Utils::isBlank({1})
 	pl:			Utils::isBlank({1})
+	rs:			{1}.trim().is_empty()
 	default:	Utils.isBlank({1})
 
 # buffer_get(<byte_buffer>, <uint>) => <byte>
@@ -1348,6 +1375,7 @@ acos(<double>) => <double>
 	plRequire:	use Math::Trig qw(acos);
 	py:			math.acos({1})
 	pyRequire:	import math
+	rs:			{1}.acos()
 	swift:		acos({1})
 
 # acosh(<double>)
@@ -1360,6 +1388,7 @@ acosh(<double>) => <double>
 	plRequire:	use Math::Trig qw(acosh);
 	py:			math.acosh({1})
 	pyRequire:	import math
+	rs:			{1}.acosh()
 	swift:		acosh({1})
 
 # asin(x)
@@ -1372,6 +1401,7 @@ asin(<double>) => <double>
 	plRequire:	use Math::Trig qw(asin);
 	py:			math.asin({1})
 	pyRequire:	import math
+	rs:			{1}.asin()
 	swift:		asin({1})
 
 # asinh(x)
@@ -1384,6 +1414,7 @@ asinh(<double>) => <double>
 	plRequire:	use Math::Trig qw(asinh);
 	py:			math.asinh({1})
 	pyRequire:	import math
+	rs:			{1}.asinh()
 	swift:		asinh({1})
 
 # atan(x)
@@ -1396,6 +1427,7 @@ atan(<double>) => <double>
 	plRequire:	use Math::Trig qw(atan);
 	py:			math.atan({1})
 	pyRequire:	import math
+	rs:			{1}.atan()
 	swift:		atan({1})
 
 # atan2(y, x)
@@ -1405,9 +1437,9 @@ atan2(<double>, <double>) => <double>
 	java:		Math.atan2({1}, {2})
 	js:			Math.atan2({1}, {2})
 	pl:			atan2({1}, {2})
-	plRequire:	use Math::Trig qw(atan2);
 	py:			math.atan2({1}, {2})
 	pyRequire:	import math
+	rs:			{1}.atan2({2})
 	swift:		atan2({1}, {2})
 
 # atanh(x)
@@ -1420,6 +1452,7 @@ atanh(<double>) => <double>
 	plRequire:	use Math::Trig qw(atanh);
 	py:			math.atanh({1})
 	pyRequire:	import math
+	rs:			{1}.atanh()
 	swift:		atanh({1})
 
 # ceil(x)
@@ -1444,6 +1477,7 @@ cos(<double>) => <double>
 	pl:			cos({1})
 	py:			math.cos({1})
 	pyRequire:	import math
+	rs:			{1}.cos()
 	swift:		cos({1})
 
 # cosh(x)
@@ -1456,6 +1490,7 @@ cosh(<double>) => <double>
 	plRequire:	use Math::Trig qw(cosh);
 	py:			math.cosh({1})
 	pyRequire:	import math
+	rs:			{1}.cosh()
 	swift:		cosh({1})
 
 # exp(x)
@@ -1467,6 +1502,7 @@ exp(<double>) => <double>
 	pl:			exp({1})
 	py:			math.exp({1})
 	pyRequire:	import math
+	rs:			{1}.exp()
 	swift:		exp({1})
 
 # fabs(x)
@@ -1476,9 +1512,9 @@ fabs(<double>) => <double>
 	java:		Math.abs({1})
 	js:			Math.abs({1})
 	pl:			abs({1})
-	plRequire:	use Math::Trig qw(abs);
 	py:			abs({1})
 	pyRequire:	import math
+	rs:			{1}.abs()
 	swift:		fabs({1})
 
 # floor(x)
@@ -1503,6 +1539,7 @@ fmax(<double>, <double>) => <double>
 	pl:			max({1}, {2})
 	plRequire:	use List::Util qw(min max);
 	py:			max({1}, {2})
+	rs:			{1}.max({2})
 	swift:		fmax({1}, {2})
 
 # fmin(x, y)
@@ -1514,6 +1551,7 @@ fmin(<double>, <double>) => <double>
 	pl:			min({1}, {2})
 	plRequire:	use List::Util qw(min max);
 	py:			min({1}, {2})
+	rs:			{1}.min({2})
 	swift:		fmin({1}, {2})
 
 # log(x)
@@ -1525,6 +1563,7 @@ log(<double>) => <double>
 	pl:			log({1})
 	py:			math.log({1})
 	pyRequire:	import math
+	rs:			{1}.ln()
 	swift:		log({1})
 
 # log10(x)
@@ -1549,6 +1588,7 @@ max(<int>, <int>) => <int>
 	pl:			max({1}, {2})
 	plRequire:	use List::Util qw(min max);
 	py:			max({1}, {2})
+	rs:			{1}.max({2})
 	swift:		max({1}, {2})
 
 # min(x, y)
@@ -1560,6 +1600,7 @@ min(<int>, <int>) => <int>
 	pl:			min({1}, {2})
 	plRequire:	use List::Util qw(min max);
 	py:			min({1}, {2})
+	rs:			{1}.min({2})
 	swift:		min({1}, {2})
 
 # pow(x, pow)
@@ -1601,6 +1642,7 @@ irandom(<int>) => <int>
 	pl:			int(rand({1}))
 	py:			int({1} * random.random())
 	pyRequire:	import random
+	rs:		(({1} as f64) * rand::random::<f64>()).trunc()
 	swift:		Int.random(in: 0..<{1})
 
 # random(x)	 [0, 1)
@@ -1612,6 +1654,8 @@ random() => <double>
 	pl:			rand()
 	py:			random.random()
 	pyRequire:	import random
+	rs:         rand::random::<f64>()
+	swift:		Double.random(in:)
 	swift:		Double.random(in: 0.0 ..< 1.0)
 
 # round(x)
@@ -1636,6 +1680,7 @@ sin(<double>) => <double>
 	pl:			sin({1})
 	py:			math.sin({1})
 	pyRequire:	import math
+	rs:			{1}.sin()
 	swift:		sin({1})
 
 # sinh(x)
@@ -1648,6 +1693,7 @@ sinh(<double>) => <double>
 	plRequire:	use Math::Trig qw(sinh);
 	py:			math.sinh({1})
 	pyRequire:	import math
+	rs:			{1}.sinh()
 	swift:		sinh({1})
 
 # sqrt(x)
@@ -1672,6 +1718,7 @@ tan(<double>) => <double>
 	plRequire:	use Math::Trig qw(tan);
 	py:			math.tan({1})
 	pyRequire:	import math
+	rs:			{1}.tan()
 	swift:		tan({1})
 
 # tanh(x)
@@ -1684,6 +1731,7 @@ tanh(<double>) => <double>
 	plRequire:	use Math::Trig qw(tanh);
 	py:			math.tanh({1})
 	pyRequire:	import math
+	rs:			{1}.tanh()
 	swift:		tanh({1})
 
 # trunc(x)
@@ -1696,6 +1744,7 @@ trunc(<double>) => <double>
 	plRequire:	use POSIX qw(ceil floor);
 	py:			math.trunc({1})
 	pyRequire:	import math
+	rs:			{1}.trunc()
 	swift:		trunc({1})
 
 #list() Typecast to empty list
@@ -1742,7 +1791,7 @@ listContains[any]*<any>([any]*, <any>) => <bool>
 	pl:			{2} ~~ @{1}
 
 # push(list, value)
-push([any], <any>) => void
+push([any], any) => void
 	cpp:		Utils::push({1}, {2})
 	java:		{1}.add({2})
 	js:			{1}.push({2})
@@ -1751,14 +1800,11 @@ push([any], <any>) => void
 	rs:			{1}.push({2})
 	swift:		{1}.append({2})
 
-push[any]*<any>([any]*, <any>) => void
-	pl:			push(@{{1}}, {2})
-
-push[any]*<any>([any]*, <any>) => void
+push[any]*any([any]*, any) => void
 	pl:			push(@{{1}}, {2})
 
 # pop(list)
-pop([any]) => <any>
+pop([any]) => any
 	cpp:		Utils::pop({1})
 	java:		{1}.remove({1}.size() - 1)
 	js:			{1}.pop()
@@ -1767,7 +1813,7 @@ pop([any]) => <any>
 	rs:			{1}.pop().unwrap()
 	swift:		{1}.removeLast()
 
-pop[any]*([any]*) => <any>
+pop[any]*([any]*) => any
 	pl:			pop(@{{1}})
 
 # peek(list)
@@ -1784,7 +1830,7 @@ peek[any]*([any]*) => any
 	pl:			{1}->[-1]
 
 # shift(list)
-shift([any]) => <any>
+shift([any]) => any
 	cpp:		Utils::shift({1})
 	java:		{1}.remove(0)
 	js:			{1}.shift()
@@ -1793,11 +1839,11 @@ shift([any]) => <any>
 	rs:			{1}.remove(0)
 	swift:		{1}.removeFirst()
 
-shift[any]*([any]*) => void
+shift[any]*([any]*) => any
 	pl:			shift(@{1})
 
 # unshift(list, value)
-unshift([any], <any>) => <any>
+unshift([any], any) => void
 	cpp:		Utils::unshift({1}, {2})
 	java:		{1}.add(0, {2})
 	js:			{1}.unshift({2})
@@ -1806,7 +1852,7 @@ unshift([any], <any>) => <any>
 	rs:			{1}.insert(0,{2})
 	swift:		{1}.insert({2}, at: 0)
 
-unshift[any]*<any>([any]*, <any>) => <any>
+unshift[any]*any([any]*, any) => void
 	pl:			unshift(@{1}, {2})
 
 # peek_front(list)
@@ -1936,7 +1982,7 @@ isEmptyMap{any}*({any}*) => <bool>
 	pl:			!scalar(%{1})
 
 # mapContains(map, any)
-mapContains({any}, <any>) => <bool>
+mapContains({any}, any) => <bool>
 	cpp:		{1}.count({2})
 	java:		{1}.containsKey({2})
 	js:			{1}.has({2})
@@ -1945,11 +1991,11 @@ mapContains({any}, <any>) => <bool>
 	rs:			{1}.contains_key({2})
 	swift:		{1}.keys.contains({2})
 
-mapContains{any}*<any>({any}*, <any>) => <bool>
+mapContains{any}*any({any}*, any) => <bool>
 	pl:			exists {1}->{{2}}
 
 # mapRemove(map, any)
-mapRemove({any}, <any>) => void
+mapRemove({any}, any) => void
 	cpp:		{1}.erase({2})
 	java:		{1}.remove({2})
 	js:			{1}.delete({2})
@@ -1958,7 +2004,7 @@ mapRemove({any}, <any>) => void
 	rs:			{1}.remove({2})
 	swift:		{1}.removeValue(forKey: {2})
 
-mapRemove{any}*<any>({any}*, <any>) => void
+mapRemove{any}*any({any}*, any) => void
 	pl:			delete({1}->{{2}})
 
 # clearMap(map)
@@ -2015,6 +2061,7 @@ tuple(...) => «any»
 	cpp:		make_tuple({0})
 	java:		Tuple.makeTuple({0})
 	js:			[{0}]
+	pl:			[{0}]
 	default:	({0})
 
 #tupleRef(...) Typecast to tuple reference
@@ -2322,39 +2369,43 @@ toSlice(<string>) => <char*>
 	rs:			{1}.as_str()
 	default:	{1}
 
-# ref(<any>)
-ref(<any>) => <any>
+# ref(any)
+ref(any) => any
 	rs:			&{1}
 	default:	{1}
 
-# mutref(<any>)
-mutref(<any>) => <any>
+# mutref(any)
+mutref(any) => any
 	rs:			&mut {1}
 	default:	{1}
 
-# deref(<any>)
-deref(<any>) => <any>
+# deref(any)
+deref(any) => any
 	rs:			*{1}
 	default:	{1}
 
+# some(any) Optional value in Rust
+    rs:         Some({1})
+    default:    {1}
+
 # unwrap(any)
-unwrap(<any>) => <any>
+unwrap(any) => any
 	rs:			{1}.unwrap()
 	swift:		{1}!
 	default:	{1}
 
 # unwrapRust(any)
-unwrapRust(<any>) => <any>
+unwrapRust(any) => any
 	rs:			{1}.unwrap()
 	default:	{1}
 
 # unwrapSwift(any)
-unwrapSwift(<any>) => <any>
+unwrapSwift(any) => any
 	swift:		{1}!
 	default:	{1}
 
 # unwrapResult(any)
-unwrapResult(<any>) => <any>
+unwrapResult(any) => any
 	rs:			{1}.unwrap()
 	default:	{1}
 

@@ -478,3 +478,145 @@ pub fn prompt(message: &str) -> String {
     
     input.trim().to_string()       // Trim whitespace and return the input
 }
+
+pub fn find_char(s: &str, c: char) -> i64 {
+    for (i, ch) in s.chars().enumerate() {
+        if ch == c {
+            return i as i64;
+        }
+    }
+    -1
+}
+
+pub fn rfind_char(s: &str, c: char) -> i64 {
+    let s_chars: Vec<char> = s.chars().collect();
+    let mut i = s_chars.len();
+    while i > 0 {
+        i -= 1;
+        if s_chars[i] == c {
+            return i as i64;
+        }
+    }
+    -1
+}
+
+pub fn find_str(s: &str, needle: &str) -> i64 {
+    if needle.is_empty() {
+        return 0;
+    }
+    let needle_chars: Vec<char> = needle.chars().collect();
+    let needle_len = needle_chars.len();
+    let s_chars: Vec<char> = s.chars().collect();
+    if needle_len > s_chars.len() {
+        return -1;
+    }
+    for i in 0..=(s_chars.len() - needle_len) {
+        if s_chars[i..(i + needle_len)] == needle_chars[..] {
+            return i as i64;
+        }
+    }
+    -1
+}
+
+pub fn rfind_str(s: &str, needle: &str) -> i64 {
+    if needle.is_empty() {
+        return s.chars().count() as i64;
+    }
+    let needle_chars: Vec<char> = needle.chars().collect();
+    let needle_len = needle_chars.len();
+    let s_chars: Vec<char> = s.chars().collect();
+    if needle_len > s_chars.len() {
+        return -1;
+    }
+    let mut i = s_chars.len() - needle_len;
+    loop {
+        if s_chars[i..(i + needle_len)] == needle_chars[..] {
+            return i as i64;
+        }
+        if i == 0 {
+            break;
+        }
+        i -= 1;
+    }
+    -1
+}
+
+pub fn buildHeader(header: &str) -> String {
+    return buildHeader3(header, "*", 79);
+}
+
+pub fn buildHeader2(header: &str, c: &str) -> String {
+    return buildHeader3(header, c, 79);
+}
+
+pub fn buildHeader3(header: &str, c: &str, width: usize) -> String{
+    let separator:String = c.repeat(width);
+    return String::from("\n") + &separator + "\n" + header + "\n" + &separator + "\n";
+}
+
+const DIGITS: &[u8; 36] = b"0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+pub fn toBase(value: i64, base: usize) -> String {
+    if base < 2 || base > 36 {
+        return "BaseError".to_string();
+    }
+    if value == 0 {
+        return "0".to_string();
+    }
+    let neg = value < 0;
+    let mut x = if neg { -(value as i128) } else { value as i128 };
+    let b = base as i128;
+    let mut result = String::new();
+    while x > 0 {
+        let d = (x % b) as usize;
+        result.insert(0, DIGITS[d] as char);
+        x /= b;
+    }
+    if neg {
+        result.insert(0, '-');
+    }
+    result
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PadAlignType {
+    LEFT = 0,
+    CENTER = 1,
+    RIGHT = 2,
+}
+
+pub fn padAlign(s: &str, width: usize, align: PadAlignType, pad_with: &str, prefix: Option<&str>, prefix_front: Option<&str>) -> String {
+    let mut result = match prefix {
+        Some(p) => format!("{}{}", p, s),
+        None => s.to_string(),
+    };
+    let prefix_front_len = prefix_front.map(|pf| pf.chars().count()).unwrap_or(0);
+    let result_len = result.chars().count();
+    let available = if width > result_len + prefix_front_len {
+        width - result_len - prefix_front_len
+    } else {
+        0
+    };
+    if available > 0 {
+        let pad: String = std::iter::repeat(pad_with).take(available).collect();
+        match align {
+            PadAlignType::RIGHT => {
+                result = format!("{}{}", pad, result);
+            }
+            PadAlignType::CENTER => {
+                let left = available / 2;
+                let right = (available + 1) / 2;
+                let lpad: String = std::iter::repeat(pad_with).take(left).collect();
+                let rpad: String = std::iter::repeat(pad_with).take(right).collect();
+                result = format!("{}{}{}", lpad, result, rpad);
+            }
+            PadAlignType::LEFT => {
+                result = format!("{}{}", result, pad);
+            }
+        }
+    }
+    match prefix_front {
+        Some(pf) => format!("{}{}", pf, result),
+        None => result,
+    }
+}

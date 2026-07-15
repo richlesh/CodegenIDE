@@ -190,7 +190,7 @@ public class TerminalPanel extends JComponent implements Scrollable {
                         } finally { bufferLock.unlock(); }
                         repaint();
                     }
-                } else if (e.getKeyCode() == KeyEvent.VK_D && (e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) != 0) {
+                } else if (isEOFKey(e)) {
                     e.consume();
                     if (inputPipe != null) try { inputPipe.close(); } catch (Exception ignored) {}
                     inputEnabled = false;
@@ -209,6 +209,16 @@ public class TerminalPanel extends JComponent implements Scrollable {
                 currentFg = saved;
             }
         });
+    }
+
+    private boolean isEOFKey(KeyEvent e) {
+        if ((e.getModifiersEx() & KeyEvent.CTRL_DOWN_MASK) == 0) return false;
+        boolean isWindows = System.getProperty("os.name", "").toLowerCase().startsWith("win");
+        if (isWindows) {
+            return e.getKeyCode() == KeyEvent.VK_Z;
+        } else {
+            return e.getKeyCode() == KeyEvent.VK_D;
+        }
     }
 
     public void setFont(String fontName, int fontSize) {

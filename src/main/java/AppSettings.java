@@ -53,14 +53,14 @@ public class AppSettings {
 
     public Color[] colors = {
         Color.BLACK,              // normal
-        new Color(0, 0, 180),     // keyword
-        new Color(128, 0, 128),   // directive
-        new Color(0x99, 0x99, 0x99),   // comment
-        new Color(163, 21, 21),   // string
-        new Color(180, 100, 0),   // number
-        new Color(200, 0, 100),   // built-in
-        new Color(0, 100, 100),   // type
-        new Color(100, 0, 150)    // type keyword
+        new Color(0, 80, 255),    // keyword
+        new Color(255, 0, 255),   // directive
+        new Color(128, 128, 128), // comment
+        new Color(255, 0 , 0),    // string
+        new Color(255, 148, 0),   // number
+        new Color(0,229, 190 ),   // built-in
+        new Color(75, 229, 0),    // type
+        new Color(127, 0, 255)    // type keyword
     };
 
     public void save() {

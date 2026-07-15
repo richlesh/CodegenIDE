@@ -1,7 +1,8 @@
 import javax.swing.*;
 import javax.swing.text.*;
 import java.awt.*;
-import java.util.Set;
+import java.io.*;
+import java.util.*;
 import java.util.regex.*;
 
 public class CodegenSyntaxHighlighter {
@@ -36,11 +37,30 @@ public class CodegenSyntaxHighlighter {
         "in", "extends", "implements", "throws"
     );
 
-    private static final Set<String> BUILTINS = Set.of(
-        "format", "string", "char", "byte", "short", "int", "long",
-        "int16", "int32", "int64", "double",
-        "isNull", "listsize", "mapsize", "mapkeys", "mapkeysAsList"
-    );
+    private static final Set<String> BUILTINS = loadBuiltins();
+
+    private static Set<String> loadBuiltins() {
+        Set<String> builtins = new HashSet<>(Set.of(
+            "format", "string", "char", "byte", "short", "int", "long",
+            "int16", "int32", "int64", "double",
+            "isNull", "listsize", "mapsize", "mapkeys", "mapkeysAsList"
+        ));
+        java.util.regex.Pattern funcPattern = java.util.regex.Pattern.compile("^([a-zA-Z_][a-zA-Z0-9_]*)\\(");
+        try (InputStream in = CodegenSyntaxHighlighter.class.getResourceAsStream("/codegen_funcs.txt")) {
+            if (in == null) return builtins;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(in))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    if (line.isEmpty() || line.startsWith("#") || line.startsWith("\t")) continue;
+                    java.util.regex.Matcher m = funcPattern.matcher(line);
+                    if (m.find()) {
+                        builtins.add(m.group(1));
+                    }
+                }
+            }
+        } catch (IOException ignored) {}
+        return Collections.unmodifiableSet(builtins);
+    }
 
     private static final Pattern TOKEN_PATTERN = Pattern.compile(
         "(?<BLOCKCOMMENT>/#[\\s\\S]*?#/)" +

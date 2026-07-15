@@ -917,7 +917,7 @@ public class CodegenApp {
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling Swift...\n"));
                 String swiftcPath = settings.getEffectiveToolPath("swiftc");
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
-                    swiftcPath, baseName + ".swift", "Utils.swift"));
+                    swiftcPath, "-o", baseName, baseName + ".swift", "Utils.swift"));
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName))) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
@@ -1019,6 +1019,7 @@ public class CodegenApp {
                     procStdin.write(buf, 0, n);
                     procStdin.flush();
                 }
+                procStdin.close();
             } catch (IOException ignored) {}
         });
         inputThread.setDaemon(true);
