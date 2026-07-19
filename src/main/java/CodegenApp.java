@@ -352,18 +352,32 @@ public class CodegenApp {
         // Generate menu
         JMenu generateMenu = new JMenu("Generate");
         JMenuItem genCpp = new JMenuItem("C++");
+        genCpp.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.ALT_DOWN_MASK));
         genCpp.addActionListener(e -> generateLanguage("cpp"));
         JMenuItem genJava = new JMenuItem("Java");
+        genJava.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_J,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.ALT_DOWN_MASK));
         genJava.addActionListener(e -> generateLanguage("java"));
         JMenuItem genJs = new JMenuItem("Javascript");
+        genJs.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.ALT_DOWN_MASK));
         genJs.addActionListener(e -> generateLanguage("js"));
         JMenuItem genPerl = new JMenuItem("Perl");
+        genPerl.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.ALT_DOWN_MASK));
         genPerl.addActionListener(e -> generateLanguage("pl"));
         JMenuItem genPython = new JMenuItem("Python");
+        genPython.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.ALT_DOWN_MASK));
         genPython.addActionListener(e -> generateLanguage("py"));
         JMenuItem genSwift = new JMenuItem("Swift");
+        genSwift.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.ALT_DOWN_MASK));
         genSwift.addActionListener(e -> generateLanguage("swift"));
         JMenuItem genRust = new JMenuItem("Rust");
+        genRust.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.ALT_DOWN_MASK));
         genRust.addActionListener(e -> generateLanguage("rs"));
         generateMenu.add(genCpp);
         generateMenu.add(genJava);
@@ -374,24 +388,40 @@ public class CodegenApp {
         generateMenu.add(genSwift);
         generateMenu.addSeparator();
         JMenuItem genAll = new JMenuItem("Generate All");
+        genAll.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.ALT_DOWN_MASK));
         genAll.addActionListener(e -> generateAll());
         generateMenu.add(genAll);
 
         // Run menu
         JMenu runMenu = new JMenu("Run");
         JMenuItem runCpp = new JMenuItem("C++");
+        runCpp.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
         runCpp.addActionListener(e -> runLanguage("cpp"));
         JMenuItem runJava = new JMenuItem("Java");
+        runJava.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_J,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
         runJava.addActionListener(e -> runLanguage("java"));
         JMenuItem runJs = new JMenuItem("Javascript");
+        runJs.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_V,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
         runJs.addActionListener(e -> runLanguage("js"));
         JMenuItem runPerl = new JMenuItem("Perl");
+        runPerl.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
         runPerl.addActionListener(e -> runLanguage("pl"));
         JMenuItem runPython = new JMenuItem("Python");
+        runPython.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
         runPython.addActionListener(e -> runLanguage("py"));
         JMenuItem runSwift = new JMenuItem("Swift");
+        runSwift.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
         runSwift.addActionListener(e -> runLanguage("swift"));
         JMenuItem runRust = new JMenuItem("Rust");
+        runRust.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R,
+            Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
         runRust.addActionListener(e -> runLanguage("rs"));
         runMenu.add(runCpp);
         runMenu.add(runJava);
@@ -453,15 +483,15 @@ public class CodegenApp {
 
                 // Previous
                 JMenuItem prevItem = new JMenuItem("Previous");
-                prevItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_QUOTE,
+                prevItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_COMMA,
                     Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
                 prevItem.addActionListener(ev -> cycleWindow(-1));
                 windowMenu.add(prevItem);
 
                 // Next
                 JMenuItem nextItem = new JMenuItem("Next");
-                nextItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_QUOTE,
-                    Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+                nextItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_PERIOD,
+                    Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
                 nextItem.addActionListener(ev -> cycleWindow(1));
                 windowMenu.add(nextItem);
 
