@@ -73,7 +73,7 @@ mvn clean package
 Or directly:
 
 ```bash
-java -jar target/CodegenIDE-1.0.0.jar
+java -jar target/CodegenIDE-1.1.0.jar
 ```
 
 The `lib/` directory contains runtime dependencies (Codegen compiler, Utils, ANTLR) that must be on the classpath. The default classpath can be overridden with `-Dcodegen.classpath=...`.

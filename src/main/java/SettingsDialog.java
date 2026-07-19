@@ -85,7 +85,9 @@ public class SettingsDialog {
             {"Alibaba", "https://www.alibabacloud.com/help/en/model-studio/get-api-key", "https://dashscope-us.aliyuncs.com/compatible-mode/v1"},
             {"Anthropic", "https://console.anthropic.com/settings/keys", "https://api.anthropic.com/v1"},
             {"DeepSeek", "https://platform.deepseek.com/api_keys", "https://api.deepseek.com/v1"},
+            {"Generic", "", ""},
             {"Google", "https://aistudio.google.com/apikey", "https://generativelanguage.googleapis.com/v1beta/openai"},
+            {"Moonshot", "https://platform.moonshot.ai", "https://api.moonshot.ai/v1"},
             {"Ollama", "https://ollama.com", "http://localhost:11434/v1"},
             {"OpenAI", "https://platform.openai.com/api-keys", "https://api.openai.com/v1"},
         };
@@ -117,14 +119,39 @@ public class SettingsDialog {
         lgbc.gridx = 1; lgbc.gridy = 3;
         llmPanel.add(apiKeyLink, lgbc);
 
+        // Endpoint URL (visible only for Generic vendor)
+        JLabel endpointLabel = new JLabel("Endpoint URL:");
+        lgbc.gridx = 0; lgbc.gridy = 4; lgbc.fill = GridBagConstraints.NONE; lgbc.weightx = 0;
+        llmPanel.add(endpointLabel, lgbc);
+        JTextField endpointField = new JTextField(settings.llmEndpoint != null ? settings.llmEndpoint : "", 20);
+        lgbc.gridx = 1; lgbc.fill = GridBagConstraints.HORIZONTAL; lgbc.weightx = 1;
+        llmPanel.add(endpointField, lgbc);
+
+        // Show/hide endpoint field based on vendor
+        Runnable updateEndpointVisibility = () -> {
+            boolean isGeneric = "Generic".equals(vendorCombo.getSelectedItem());
+            endpointLabel.setVisible(isGeneric);
+            endpointField.setVisible(isGeneric);
+            apiKeyLink.setVisible(!isGeneric);
+        };
+        updateEndpointVisibility.run();
+
         // Fetch models from vendor API
         Runnable fetchModels = () -> {
             int vi = vendorCombo.getSelectedIndex();
             String apiKey = new String(apiKeyField.getPassword()).trim();
-            String baseUrl = vendorData[vi][2];
+            String resolvedUrl = vendorData[vi][2];
+            // For Generic vendor, use the endpoint field
+            if ("Generic".equals(vendorData[vi][0])) {
+                resolvedUrl = endpointField.getText().trim();
+                if (resolvedUrl.endsWith("/")) resolvedUrl = resolvedUrl.substring(0, resolvedUrl.length() - 1);
+            }
+            final String baseUrl = resolvedUrl;
             modelCombo.removeAllItems();
-            if (apiKey.isEmpty() && !"Ollama".equals(vendorData[vi][0])) {
-                if (settings.llmModel != null) modelCombo.addItem(settings.llmModel);
+            if (baseUrl.isEmpty()) {
+                return;
+            }
+            if (apiKey.isEmpty() && !"Ollama".equals(vendorData[vi][0]) && !"Generic".equals(vendorData[vi][0])) {
                 return;
             }
             new Thread(() -> {
@@ -147,18 +174,40 @@ public class SettingsDialog {
                     while (m.find()) models.add(m.group(1));
                     SwingUtilities.invokeLater(() -> {
                         modelCombo.removeAllItems();
-                        for (String mod : models) modelCombo.addItem(mod);
-                        if (settings.llmModel != null) modelCombo.setSelectedItem(settings.llmModel);
+                        if (!models.isEmpty()) {
+                            for (String mod : models) modelCombo.addItem(mod);
+                            // Select saved model if it's in the list, otherwise leave blank
+                            if (settings.llmModel != null && models.contains(settings.llmModel)) {
+                                modelCombo.setSelectedItem(settings.llmModel);
+                            } else {
+                                modelCombo.setSelectedItem(null);
+                                if (modelCombo.getEditor() != null) {
+                                    modelCombo.getEditor().setItem("");
+                                }
+                            }
+                        }
                     });
                 } catch (Exception ex) {
                     SwingUtilities.invokeLater(() -> {
-                        if (settings.llmModel != null) modelCombo.addItem(settings.llmModel);
+                        modelCombo.removeAllItems();
                     });
                 }
             }).start();
         };
+        // Pre-populate with saved model, then attempt to fetch full list
+        if (settings.llmModel != null && !settings.llmModel.isEmpty()) {
+            modelCombo.addItem(settings.llmModel);
+            modelCombo.setSelectedItem(settings.llmModel);
+        }
         fetchModels.run();
-        vendorCombo.addActionListener(e -> fetchModels.run());
+        vendorCombo.addActionListener(e -> {
+            // Clear model and API key when vendor changes
+            modelCombo.removeAllItems();
+            apiKeyField.setText("");
+            endpointField.setText("");
+            updateEndpointVisibility.run();
+            fetchModels.run();
+        });
         apiKeyField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
             private javax.swing.Timer debounce = new javax.swing.Timer(500, e -> fetchModels.run());
             { debounce.setRepeats(false); }
@@ -172,6 +221,15 @@ public class SettingsDialog {
                 try { Desktop.getDesktop().browse(java.net.URI.create(vendorData[vendorCombo.getSelectedIndex()][1])); }
                 catch (Exception ignored) {}
             }
+        });
+
+        // Re-fetch models when endpoint URL changes (for Generic vendor)
+        endpointField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            private javax.swing.Timer debounce = new javax.swing.Timer(500, e -> fetchModels.run());
+            { debounce.setRepeats(false); }
+            public void insertUpdate(javax.swing.event.DocumentEvent e) { debounce.restart(); }
+            public void removeUpdate(javax.swing.event.DocumentEvent e) { debounce.restart(); }
+            public void changedUpdate(javax.swing.event.DocumentEvent e) { debounce.restart(); }
         });
 
         llmPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -435,6 +493,7 @@ public class SettingsDialog {
             settings.llmModel = (String) modelCombo.getSelectedItem();
             String key = new String(apiKeyField.getPassword()).trim();
             settings.llmApiKey = key.isEmpty() ? null : key;
+            settings.llmEndpoint = endpointField.getText().trim();
             settings.userPromptColor = userColor[0];
             settings.aiResponseColor = aiColor[0];
             settings.consoleFg = conFg[0];

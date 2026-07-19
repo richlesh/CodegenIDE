@@ -2,8 +2,11 @@ import javax.swing.*;
 import javax.swing.event.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.datatransfer.*;
+import java.awt.dnd.*;
 import java.io.*;
 import java.nio.file.*;
+import java.util.List;
 import java.util.regex.*;
 import org.fife.ui.rsyntaxtextarea.*;
 import org.fife.ui.rtextarea.*;
@@ -12,6 +15,10 @@ public class CodegenApp {
     private static final boolean IS_MAC = System.getProperty("os.name").toLowerCase().contains("mac");
     private static final boolean IS_WINDOWS = System.getProperty("os.name").toLowerCase().contains("win");
     private static boolean splashShown = false;
+    // Track app instances for file-open routing
+    private static final java.util.List<CodegenApp> instances = new java.util.ArrayList<>();
+    // File to open on startup (from command-line args or macOS OpenFilesHandler before GUI is ready)
+    private static volatile Path pendingFile = null;
 
     // Path to the Codegen lib directory
     private static final String CODEGEN_CLASSPATH = System.getProperty("codegen.classpath",
@@ -94,6 +101,23 @@ public class CodegenApp {
         if (IS_MAC) {
             System.setProperty("apple.laf.useScreenMenuBar", "true");
             System.setProperty("apple.awt.application.name", "CodegenIDE");
+            // Register macOS file-open handler for double-click on .src files
+            Desktop.getDesktop().setOpenFileHandler(e -> {
+                java.util.List<File> files = e.getFiles();
+                if (files != null && !files.isEmpty()) {
+                    Path path = files.get(0).toPath();
+                    if (path.toString().endsWith(".src")) {
+                        SwingUtilities.invokeLater(() -> openFileInInstance(path));
+                    }
+                }
+            });
+        }
+        // Handle command-line file argument (used on Linux/Windows file association)
+        if (args.length > 0) {
+            Path path = Path.of(args[0]);
+            if (path.toString().endsWith(".src") && Files.exists(path)) {
+                pendingFile = path;
+            }
         }
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
@@ -136,7 +160,7 @@ public class CodegenApp {
         // Use nested invokeLater to ensure all layout passes have completed
         SwingUtilities.invokeLater(() -> SwingUtilities.invokeLater(() -> {
             if (settings.mainDivider > 0) mainSplit.setDividerLocation(settings.mainDivider);
-            if (settings.editorPreviewDivider > 0) editorPreviewSplit.setDividerLocation(settings.editorPreviewDivider);
+            editorPreviewSplit.setDividerLocation(settings.editorPreviewDivider);
             if (settings.aiVisible && settings.aiDivider > 0) aiSplit.setDividerLocation(settings.aiDivider);
             // Show splash screen on startup if not licensed
             if (!splashShown && !LicenseDialog.isLicensed(settings)) {
@@ -144,6 +168,24 @@ public class CodegenApp {
                 SplashScreen.show();
             }
         }));
+
+        // Register this instance for file-open routing
+        instances.add(this);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override public void windowClosed(WindowEvent e) {
+                instances.remove(CodegenApp.this);
+            }
+        });
+
+        // Set up drag-and-drop of .src files onto the editor
+        setupEditorDragAndDrop();
+
+        // Load pending file from command-line argument (first window only)
+        if (pendingFile != null) {
+            Path fileToOpen = pendingFile;
+            pendingFile = null;
+            loadFile(fileToOpen);
+        }
     }
 
     private void applySettings() {
@@ -367,12 +409,18 @@ public class CodegenApp {
 
         // Help menu
         JMenu helpMenu = new JMenu("Help");
-        JMenuItem onlineDocsItem = new JMenuItem("Online Documentation");
-        onlineDocsItem.addActionListener(e -> {
-            try { Desktop.getDesktop().browse(new java.net.URI("https://glowingcat.com/")); }
+        JMenuItem ideHelpItem = new JMenuItem("CodegenIDE Help");
+        ideHelpItem.addActionListener(e -> {
+            try { Desktop.getDesktop().browse(new java.net.URI("http://pureprogrammer.org/CodegenIDE/docs")); }
             catch (Exception ex) { ex.printStackTrace(); }
         });
-        helpMenu.add(onlineDocsItem);
+        helpMenu.add(ideHelpItem);
+        JMenuItem langSpecItem = new JMenuItem("Codegen Language Reference");
+        langSpecItem.addActionListener(e -> {
+            try { Desktop.getDesktop().browse(new java.net.URI("http://pureprogrammer.org/Codegen/docs")); }
+            catch (Exception ex) { ex.printStackTrace(); }
+        });
+        helpMenu.add(langSpecItem);
         helpMenu.addSeparator();
         JCheckBoxMenuItem aiToggleItem = new JCheckBoxMenuItem("AI Assistant");
         aiToggleItem.setSelected(settings.aiVisible);
@@ -384,6 +432,54 @@ public class CodegenApp {
         windowMenu.addMenuListener(new javax.swing.event.MenuListener() {
             @Override public void menuSelected(javax.swing.event.MenuEvent e) {
                 windowMenu.removeAll();
+
+                // Minimize
+                JMenuItem minimizeItem = new JMenuItem("Minimize");
+                minimizeItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M,
+                    Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+                minimizeItem.addActionListener(ev -> frame.setState(java.awt.Frame.ICONIFIED));
+                windowMenu.add(minimizeItem);
+
+                // Zoom
+                JMenuItem zoomItem = new JMenuItem("Zoom");
+                zoomItem.addActionListener(ev -> {
+                    if ((frame.getExtendedState() & java.awt.Frame.MAXIMIZED_BOTH) != 0) {
+                        frame.setExtendedState(java.awt.Frame.NORMAL);
+                    } else {
+                        frame.setExtendedState(java.awt.Frame.MAXIMIZED_BOTH);
+                    }
+                });
+                windowMenu.add(zoomItem);
+
+                // Previous
+                JMenuItem prevItem = new JMenuItem("Previous");
+                prevItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_QUOTE,
+                    Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx() | InputEvent.SHIFT_DOWN_MASK));
+                prevItem.addActionListener(ev -> cycleWindow(-1));
+                windowMenu.add(prevItem);
+
+                // Next
+                JMenuItem nextItem = new JMenuItem("Next");
+                nextItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_BACK_QUOTE,
+                    Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()));
+                nextItem.addActionListener(ev -> cycleWindow(1));
+                windowMenu.add(nextItem);
+
+                windowMenu.addSeparator();
+
+                // Cascade All
+                JMenuItem cascadeItem = new JMenuItem("Cascade All");
+                cascadeItem.addActionListener(ev -> cascadeAllWindows());
+                windowMenu.add(cascadeItem);
+
+                // Tile All
+                JMenuItem tileItem = new JMenuItem("Tile All");
+                tileItem.addActionListener(ev -> tileAllWindows());
+                windowMenu.add(tileItem);
+
+                windowMenu.addSeparator();
+
+                // Window list
                 java.util.List<JFrame> frames = new java.util.ArrayList<>();
                 for (Window w : Window.getWindows()) {
                     if (w instanceof JFrame jf && w.isDisplayable() && w.isVisible()) {
@@ -393,8 +489,9 @@ public class CodegenApp {
                 frames.sort((a, b) -> getWindowLabel(a).compareToIgnoreCase(getWindowLabel(b)));
                 for (JFrame jf : frames) {
                     String label = getWindowLabel(jf);
-                    JMenuItem item = new JMenuItem(label);
+                    JCheckBoxMenuItem item = new JCheckBoxMenuItem(label);
                     if (jf == frame) {
+                        item.setSelected(true);
                         item.setFont(item.getFont().deriveFont(Font.BOLD));
                     }
                     item.addActionListener(ev -> {
@@ -518,6 +615,68 @@ public class CodegenApp {
             lastDirectory = new File(fd.getDirectory());
             loadFile(Path.of(fd.getDirectory(), fd.getFile()));
         }
+    }
+
+    /**
+     * Open a file in a new CodegenIDE window.
+     */
+    private static void openFileInInstance(Path path) {
+        pendingFile = path;
+        SwingUtilities.invokeLater(() -> new CodegenApp().createAndShowGUI());
+    }
+
+    /**
+     * Set up drag-and-drop support for .src files on the code editor.
+     */
+    private void setupEditorDragAndDrop() {
+        new DropTarget(codeEditor, DnDConstants.ACTION_COPY_OR_MOVE, new DropTargetAdapter() {
+            @Override
+            public void dragEnter(DropTargetDragEvent dtde) {
+                if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    dtde.acceptDrag(DnDConstants.ACTION_COPY);
+                } else {
+                    dtde.rejectDrag();
+                }
+            }
+
+            @Override
+            public void dragOver(DropTargetDragEvent dtde) {
+                if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                    dtde.acceptDrag(DnDConstants.ACTION_COPY);
+                } else {
+                    dtde.rejectDrag();
+                }
+            }
+
+            @Override
+            @SuppressWarnings("unchecked")
+            public void drop(DropTargetDropEvent dtde) {
+                try {
+                    if (dtde.isDataFlavorSupported(DataFlavor.javaFileListFlavor)) {
+                        dtde.acceptDrop(DnDConstants.ACTION_COPY);
+                        List<File> files = (List<File>) dtde.getTransferable()
+                                .getTransferData(DataFlavor.javaFileListFlavor);
+                        if (files != null && !files.isEmpty()) {
+                            File file = files.get(0);
+                            if (file.getName().endsWith(".src")) {
+                                if (promptSaveIfNeeded()) {
+                                    loadFile(file.toPath());
+                                }
+                                dtde.dropComplete(true);
+                            } else {
+                                dtde.dropComplete(false);
+                            }
+                        } else {
+                            dtde.dropComplete(false);
+                        }
+                    } else {
+                        dtde.rejectDrop();
+                    }
+                } catch (Exception ex) {
+                    dtde.dropComplete(false);
+                }
+            }
+        }, true);
     }
 
     void loadFile(Path path) {
@@ -779,6 +938,7 @@ public class CodegenApp {
                         SwingUtilities.invokeLater(() -> appendConsole("> Generation failed. Cannot run.\n"));
                         return;
                     }
+                    SwingUtilities.invokeLater(() -> previewPanel.refreshPreview());
                 }
 
                 // Compile and run based on language
@@ -1167,6 +1327,79 @@ public class CodegenApp {
         } catch (javax.swing.text.BadLocationException ignored) {}
     }
 
+    private void cycleWindow(int direction) {
+        java.util.List<JFrame> frames = new java.util.ArrayList<>();
+        for (Window w : Window.getWindows()) {
+            if (w instanceof JFrame jf && w.isDisplayable() && w.isVisible()) {
+                frames.add(jf);
+            }
+        }
+        if (frames.size() <= 1) return;
+        int idx = frames.indexOf(frame);
+        int next = (idx + direction + frames.size()) % frames.size();
+        JFrame target = frames.get(next);
+        target.setState(java.awt.Frame.NORMAL);
+        target.toFront();
+        target.requestFocus();
+    }
+
+    private void cascadeAllWindows() {
+        java.util.List<JFrame> frames = new java.util.ArrayList<>();
+        for (Window w : Window.getWindows()) {
+            if (w instanceof JFrame jf && w.isDisplayable() && w.isVisible()) {
+                frames.add(jf);
+            }
+        }
+        if (frames.isEmpty()) return;
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        Rectangle screenBounds = ge.getMaximumWindowBounds();
+        int offsetX = 25;
+        int offsetY = 25;
+        int width = Math.max(800, screenBounds.width - (frames.size() - 1) * offsetX);
+        int height = Math.max(600, screenBounds.height - (frames.size() - 1) * offsetY);
+        for (int i = 0; i < frames.size(); i++) {
+            JFrame jf = frames.get(i);
+            jf.setState(java.awt.Frame.NORMAL);
+            jf.setExtendedState(java.awt.Frame.NORMAL);
+            jf.setSize(width, height);
+            jf.setLocation(screenBounds.x + i * offsetX, screenBounds.y + i * offsetY);
+        }
+        // Bring last one to front
+        JFrame last = frames.get(frames.size() - 1);
+        last.toFront();
+        last.requestFocus();
+    }
+
+    private void tileAllWindows() {
+        java.util.List<JFrame> frames = new java.util.ArrayList<>();
+        for (Window w : Window.getWindows()) {
+            if (w instanceof JFrame jf && w.isDisplayable() && w.isVisible()) {
+                frames.add(jf);
+            }
+        }
+        if (frames.isEmpty()) return;
+        GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        Rectangle screenBounds = ge.getMaximumWindowBounds();
+        int count = frames.size();
+        int cols = (int) Math.ceil(Math.sqrt(count));
+        int rows = (int) Math.ceil((double) count / cols);
+        int tileWidth = screenBounds.width / cols;
+        int tileHeight = screenBounds.height / rows;
+        for (int i = 0; i < count; i++) {
+            JFrame jf = frames.get(i);
+            int row = i / cols;
+            int col = i % cols;
+            jf.setState(java.awt.Frame.NORMAL);
+            jf.setExtendedState(java.awt.Frame.NORMAL);
+            jf.setBounds(
+                screenBounds.x + col * tileWidth,
+                screenBounds.y + row * tileHeight,
+                tileWidth,
+                tileHeight
+            );
+        }
+    }
+
     private static String getWindowLabel(JFrame jf) {
         String title = jf.getTitle();
         if (title.startsWith("CodegenIDE - ")) {
@@ -1198,7 +1431,10 @@ public class CodegenApp {
         settings.windowWidth = frame.getWidth();
         settings.windowHeight = frame.getHeight();
         settings.mainDivider = mainSplit.getDividerLocation();
-        settings.editorPreviewDivider = editorPreviewSplit.getDividerLocation();
+        int epWidth = editorPreviewSplit.getWidth() - editorPreviewSplit.getDividerSize();
+        settings.editorPreviewDivider = epWidth > 0
+            ? (double) editorPreviewSplit.getDividerLocation() / epWidth
+            : 0.5;
         if (aiChatPanel.isVisible()) {
             settings.aiDivider = aiSplit.getDividerLocation();
         }

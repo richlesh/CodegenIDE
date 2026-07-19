@@ -1,0 +1,680 @@
+<html><head><meta charset="utf-8"><style>body { font-family: 'Calibri', sans-serif; font-size: 16pt; padding: 10px; line-height: 1.6; overflow-x: hidden; }h1, h2, h3 { color: #333; }code { background: #f4f4f4; padding: 2px 6px; border-radius: 3px; font-family: 'JetBrains Mono NL', monospace; font-size: 14pt; }pre { background: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; font-family: 'JetBrains Mono NL', monospace; font-size: 14pt; line-height: 1.4; }pre code { background: none; padding: 0; border-radius: 0; }blockquote { border-left: 4px solid #ccc; margin-left: 0; padding-left: 16px; color: #666; }table { border-collapse: collapse; margin: 12px auto; }th, td { border: 1px solid #ddd; padding: 6px 12px; }td[align=left], th[align=left] { text-align: left; }td[align=center], th[align=center] { text-align: center; }td[align=right], th[align=right] { text-align: right; }th { background-color: #f0f0f0; font-weight: bold; }tr:nth-child(even) { background-color: #f9f9f9; }img { max-width: 75%; display: block; margin: 12px auto; }a { color: #0366d6; }li { margin: 0; padding: 0; }li p { margin: 0; display: inline; }ul, ol { padding-left: 24px; }input[type=checkbox] { margin-right: 6px; vertical-align: middle; }li:has(> input[type=checkbox]) { list-style-type: none; }mjx-container { overflow: visible !important; display: inline-block; vertical-align: middle; }mjx-container[display=true] { display: block; text-align: center; margin: 1em 0 !important; }mjx-container svg { overflow: visible; }</style><script>MathJax = {  tex: { inlineMath: [['$','$']], displayMath: [['$$','$$']] },  options: { skipHtmlTags: ['script','noscript','style','textarea','pre','code'] },  svg: { fontCache: 'global' }};</script><script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script><script>window.addEventListener('scroll', function() {  var ratio = window.scrollY / Math.max(1, document.body.scrollHeight - window.innerHeight);  if(window.java) window.java.onScroll(ratio);});</script></head><body><h1 id="codegenide-user-guide">CodegenIDE User Guide</h1>
+<p>CodegenIDE is a lightweight desktop IDE for the Codegen programming language. This guide covers how to use the IDE's features effectively.</p>
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="launching-the-ide">Launching the IDE</h3>
+<p>Run CodegenIDE using the provided script:</p>
+<pre><code class="language-bash">./run.sh
+</code></pre>
+<p>Or directly:</p>
+<pre><code class="language-bash">java -jar target/CodegenIDE-1.0.0.jar
+</code></pre>
+<p>On Linux, macOS or Windows, you can also install the packaged application and launch using it.</p>
+<h3 id="opening-files">Opening Files</h3>
+<p>There are several ways to open a Codegen source file (<code>.src</code>):</p>
+<ul>
+<li><strong>File → Open</strong> (Cmd+O / Ctrl+O) — opens a file dialog filtered to <code>.src</code> files</li>
+<li><strong>Double-click</strong> a <code>.src</code> file in your file manager — opens a new CodegenIDE window with the file loaded</li>
+<li><strong>Drag and drop</strong> a <code>.src</code> file onto the editor pane — opens the file in the current window</li>
+<li><strong>Command-line argument</strong> — pass a <code>.src</code> file path as the first argument when launching</li>
+</ul>
+<p>When opening a file, any tab characters are automatically converted to spaces (4-space tab stops).</p>
+<hr />
+<h2 id="the-editor">The Editor</h2>
+<p>The main editor pane provides a full-featured code editor with:</p>
+<ul>
+<li>Syntax highlighting for Codegen source files</li>
+<li>Line numbers in the left gutter</li>
+<li>Monospaced font (configurable in Settings)</li>
+<li>Caret width of 2 pixels for visibility</li>
+</ul>
+<h3 id="editing">Editing</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Shortcut</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Undo</td>
+<td>Cmd/Ctrl+Z</td>
+</tr>
+<tr>
+<td>Redo</td>
+<td>Cmd/Ctrl+Shift+Z</td>
+</tr>
+<tr>
+<td>Cut</td>
+<td>Cmd/Ctrl+X</td>
+</tr>
+<tr>
+<td>Copy</td>
+<td>Cmd/Ctrl+C</td>
+</tr>
+<tr>
+<td>Paste</td>
+<td>Cmd/Ctrl+V</td>
+</tr>
+<tr>
+<td>Shift Selection Right</td>
+<td>Cmd/Ctrl+]</td>
+</tr>
+<tr>
+<td>Shift Selection Left</td>
+<td>Cmd/Ctrl+[</td>
+</tr>
+</tbody>
+</table>
+<p>The editor maintains 200 levels of undo history. Each text change is recorded as a full snapshot, so undo/redo always restores the complete editor state.</p>
+<h3 id="block-indent-and-outdent">Block Indent and Outdent</h3>
+<p>Select one or more lines and press Cmd/Ctrl+] to indent them by 4 spaces, or Cmd/Ctrl+[ to remove up to 4 leading spaces. This works on the entire selection.</p>
+<hr />
+<h2 id="find-and-replace">Find and Replace</h2>
+<p>Open with <strong>Edit → Find...</strong> (Cmd/Ctrl+F).</p>
+<h3 id="search-options">Search Options</h3>
+<ul>
+<li><strong>Case Sensitive</strong> — match exact case</li>
+<li><strong>Entire Word</strong> — only match whole words (adds word-boundary matching)</li>
+<li><strong>Grep</strong> — treat the search pattern as a regular expression; replacement supports backreferences</li>
+<li><strong>Selected Text Only</strong> — restrict search to the current selection</li>
+<li><strong>Wrap Around</strong> — when reaching the end of the document, continue from the beginning (enabled by default)</li>
+</ul>
+<h3 id="actions">Actions</h3>
+<table>
+<thead>
+<tr>
+<th>Button</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Next</td>
+<td>Find the next occurrence from the cursor position</td>
+</tr>
+<tr>
+<td>Previous</td>
+<td>Find the previous occurrence before the cursor</td>
+</tr>
+<tr>
+<td>First</td>
+<td>Jump to the first occurrence in the document</td>
+</tr>
+<tr>
+<td>Replace</td>
+<td>Replace the current selection with the replacement text</td>
+</tr>
+<tr>
+<td>Replace All</td>
+<td>Replace all occurrences</td>
+</tr>
+<tr>
+<td>Replace and Find</td>
+<td>Replace the current match and advance to the next</td>
+</tr>
+</tbody>
+</table>
+<p>Press Enter to trigger &quot;Next&quot; (the default action). The dialog is non-modal, so you can continue editing while it's open.</p>
+<hr />
+<h2 id="code-generation">Code Generation</h2>
+<p>CodegenIDE generates target language source code from your Codegen <code>.src</code> file. Generated files are placed in a <code>gen/</code> subdirectory next to your source file.</p>
+<h3 id="generating-code">Generating Code</h3>
+<p>Use the <strong>Generate</strong> menu to generate code for a specific language:</p>
+<ul>
+<li>C++ (<code>.cpp</code>)</li>
+<li>Java (<code>.java</code>)</li>
+<li>JavaScript (<code>.js</code>)</li>
+<li>Perl (<code>.pl</code>)</li>
+<li>Python (<code>.py</code>)</li>
+<li>Rust (<code>.rs</code>)</li>
+<li>Swift (<code>.swift</code>)</li>
+</ul>
+<p>Select <strong>Generate All</strong> to generate all seven languages at once.</p>
+<p>The IDE automatically saves your file before generating. Any required utility library files (e.g., <code>Utils.hpp</code>, <code>Utils.jar</code>) are copied into the <code>gen/</code> directory automatically.</p>
+<h3 id="preview-panel">Preview Panel</h3>
+<p>The right side of the editor shows a read-only preview of the generated code for a selected language. Use the language dropdown at the top of the preview panel to switch between languages.</p>
+<p>The preview panel features:</p>
+<ul>
+<li>Syntax highlighting appropriate for the selected language</li>
+<li>Line numbers</li>
+<li>Synchronized scrolling with the main editor (proportional vertical position)</li>
+<li>Automatic refresh after code generation</li>
+</ul>
+<hr />
+<h2 id="running-programs">Running Programs</h2>
+<p>Use the <strong>Run</strong> menu to compile and execute your program in any supported language.</p>
+<h3 id="supported-languages">Supported Languages</h3>
+<table>
+<thead>
+<tr>
+<th>Language</th>
+<th>Compiler/Runtime</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C++</td>
+<td>g++ (C++20)</td>
+<td>Links fmt library</td>
+</tr>
+<tr>
+<td>Java</td>
+<td>javac + java</td>
+<td>Assertions enabled (-ea), Utils.jar on classpath</td>
+</tr>
+<tr>
+<td>JavaScript</td>
+<td>Node.js</td>
+<td></td>
+</tr>
+<tr>
+<td>Perl</td>
+<td>perl</td>
+<td>PERL5LIB=. set for module resolution</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>python3</td>
+<td></td>
+</tr>
+<tr>
+<td>Rust</td>
+<td>cargo</td>
+<td>Creates a Cargo project structure</td>
+</tr>
+<tr>
+<td>Swift</td>
+<td>swiftc</td>
+<td>DYLD_LIBRARY_PATH set for dynamic libraries</td>
+</tr>
+</tbody>
+</table>
+<h3 id="auto-regeneration">Auto-Regeneration</h3>
+<p>When you run a program, the IDE checks if your source file is newer than the generated file. If so, it automatically regenerates the code before compiling and running.</p>
+<h3 id="command-line-arguments">Command-Line Arguments</h3>
+<p>Enter arguments in the <strong>Args</strong> field in the console toolbar. Arguments are split on whitespace and passed to your program.</p>
+<h3 id="stopping-a-program">Stopping a Program</h3>
+<p>Use <strong>Run → Stop</strong> (Cmd/Ctrl+.) to terminate a running process. You can also press Ctrl+C in the console to send a keyboard interrupt.</p>
+<hr />
+<h2 id="the-console">The Console</h2>
+<p>The built-in console displays program output and accepts input.</p>
+<h3 id="features">Features</h3>
+<ul>
+<li>Full ANSI color support (8 colors + bright variants)</li>
+<li>Text styling: bold, dim, italic, underline, strikethrough, reverse</li>
+<li>10,000-line scrollback buffer</li>
+<li>Mouse text selection (click and drag)</li>
+<li>Emoji and wide character rendering</li>
+<li>Progress bar support (carriage return handling)</li>
+</ul>
+<h3 id="keyboard-input">Keyboard Input</h3>
+<p>When a program is waiting for input:</p>
+<ul>
+<li>Type characters (displayed in white)</li>
+<li>Press Enter to send the line to the program</li>
+<li>Press Backspace to delete characters</li>
+<li>Press Ctrl+D (Unix) or Ctrl+Z (Windows) to send end-of-file</li>
+</ul>
+<h3 id="copying-from-the-console">Copying from the Console</h3>
+<p>Select text with the mouse, then press Cmd/Ctrl+C.</p>
+<hr />
+<h2 id="ai-assistant">AI Assistant</h2>
+<p>The integrated AI assistant provides coding help with context awareness.</p>
+<h3 id="showinghiding-the-panel">Showing/Hiding the Panel</h3>
+<p>Toggle the AI panel via <strong>Help → AI Assistant</strong> (checkbox menu item). The panel appears on the right side of the window.</p>
+<h3 id="using-the-chat">Using the Chat</h3>
+<ol>
+<li>Type your question or request in the input area at the bottom</li>
+<li>Press Enter to send (Shift+Enter for a newline)</li>
+<li>The AI response appears in the chat area above</li>
+</ol>
+<p>Press the <strong>Clear</strong> button to reset the conversation history.</p>
+<h3 id="context-awareness">Context Awareness</h3>
+<p>The AI automatically receives:</p>
+<ul>
+<li>Your current source code from the editor</li>
+<li>The generated code shown in the preview panel (if any)</li>
+<li>Recent console output</li>
+</ul>
+<p>This allows it to understand your program and provide relevant suggestions.</p>
+<h3 id="code-suggestions">Code Suggestions</h3>
+<p>When the AI suggests code changes, a collapsible code block appears with:</p>
+<ul>
+<li><strong>Show/Hide</strong> toggle to expand or collapse the code</li>
+<li><strong>Allow</strong> button — applies the suggested code to your editor</li>
+<li><strong>Reject</strong> button — discards the suggestion</li>
+</ul>
+<h3 id="canceling-a-request">Canceling a Request</h3>
+<p>While the AI is &quot;thinking&quot; (pulsing icon animation), click the <strong>✕</strong> button to cancel the request.</p>
+<h3 id="status-bar">Status Bar</h3>
+<p>The bottom of the AI panel shows character counts for the context being sent:</p>
+<ul>
+<li>LLM System Prompt size</li>
+<li>Current Program size</li>
+<li>Preview Program size</li>
+<li>Current Output size</li>
+</ul>
+<h3 id="supported-llm-vendors">Supported LLM Vendors</h3>
+<p>Configure your preferred AI vendor and model in Settings:</p>
+<table>
+<thead>
+<tr>
+<th>Vendor</th>
+<th>Models</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OpenAI</td>
+<td>GPT-4o, GPT-4, etc.</td>
+<td>Default vendor</td>
+</tr>
+<tr>
+<td>Anthropic</td>
+<td>Claude family</td>
+<td>Uses Anthropic Messages API</td>
+</tr>
+<tr>
+<td>Google</td>
+<td>Gemini family</td>
+<td></td>
+</tr>
+<tr>
+<td>DeepSeek</td>
+<td>DeepSeek models</td>
+<td></td>
+</tr>
+<tr>
+<td>Alibaba</td>
+<td>Qwen models</td>
+<td></td>
+</tr>
+<tr>
+<td>Ollama</td>
+<td>Local models</td>
+<td>Runs on localhost:11434, no API key needed</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="settings">Settings</h2>
+<p>Open Settings via:</p>
+<ul>
+<li><strong>CodegenIDE → Settings</strong></li>
+</ul>
+<h3 id="fonts">Fonts</h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Code Font</td>
+<td>Monospaced font for the code editor, code preview and console (only monospaced fonts are listed)</td>
+</tr>
+<tr>
+<td>Code Size</td>
+<td>Font size for the code editor, code preview and console</td>
+</tr>
+<tr>
+<td>AI Font</td>
+<td>Font for the AI chat panel (any installed font)</td>
+</tr>
+<tr>
+<td>AI Size</td>
+<td>Font size for the AI chat panel</td>
+</tr>
+</tbody>
+</table>
+<h3 id="llm-settings">LLM Settings</h3>
+<table>
+<thead>
+<tr>
+<th>Setting</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Vendor</td>
+<td>AI service provider</td>
+</tr>
+<tr>
+<td>Model</td>
+<td>Specific model (fetched live from vendor API)</td>
+</tr>
+<tr>
+<td>API Key</td>
+<td>Your API key (click &quot;Get API key...&quot; for the vendor's key page)</td>
+</tr>
+<tr>
+<td>Endpoint URL</td>
+<td>The required endpoint URL (Generic vendor only)</td>
+</tr>
+</tbody>
+</table>
+<p>The model list updates automatically when you change vendor or API key.</p>
+<h3 id="syntax-colors">Syntax Colors</h3>
+<p>Nine configurable color categories for syntax highlighting:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>What It Highlights</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal</td>
+<td>Regular identifiers and text</td>
+</tr>
+<tr>
+<td>Keywords</td>
+<td>Language keywords</td>
+</tr>
+<tr>
+<td>Directives</td>
+<td>Preprocessor/compiler directives</td>
+</tr>
+<tr>
+<td>Comments</td>
+<td>Single-line and multi-line comments</td>
+</tr>
+<tr>
+<td>Strings</td>
+<td>String and character literals</td>
+</tr>
+<tr>
+<td>Numbers</td>
+<td>Numeric literals</td>
+</tr>
+<tr>
+<td>Built-ins</td>
+<td>Built-in functions</td>
+</tr>
+<tr>
+<td>Types</td>
+<td>Type names</td>
+</tr>
+<tr>
+<td>Type Keywords</td>
+<td>Type-related keywords</td>
+</tr>
+</tbody>
+</table>
+<p>Click a color swatch to open a color picker, or type a hex color code directly.</p>
+<h3 id="console-colors">Console Colors</h3>
+<ul>
+<li><strong>Foreground</strong> — default text color in the console</li>
+<li><strong>Background</strong> — console background color</li>
+</ul>
+<h3 id="chat-colors">Chat Colors</h3>
+<ul>
+<li><strong>User Prompt</strong> — background color for your chat bubbles</li>
+<li><strong>AI Response</strong> — background color for AI response bubbles</li>
+</ul>
+<h3 id="developer-tools">Developer Tools</h3>
+<p>Configure paths to compilers and runtimes. Leave a field empty to use auto-detection. Use the <strong>Browse</strong> button to select a specific executable.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th>Used For</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C++ (g++)</td>
+<td>Compiling C++ programs</td>
+</tr>
+<tr>
+<td>Java (javac)</td>
+<td>Compiling Java programs</td>
+</tr>
+<tr>
+<td>JavaScript (node)</td>
+<td>Running JavaScript programs</td>
+</tr>
+<tr>
+<td>Perl</td>
+<td>Running Perl programs</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>Running Python programs</td>
+</tr>
+<tr>
+<td>Rust (rustc)</td>
+<td>Building Rust programs</td>
+</tr>
+<tr>
+<td>Swift (swiftc)</td>
+<td>Compiling Swift programs</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="window-management">Window Management</h2>
+<h3 id="multiple-windows">Multiple Windows</h3>
+<ul>
+<li><strong>File → New</strong> (Cmd/Ctrl+N) — opens a new empty CodegenIDE window</li>
+<li>Each window is independent with its own editor, console, and preview</li>
+</ul>
+<h3 id="window-menu">Window Menu</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Shortcut</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Minimize</td>
+<td>Cmd/Ctrl+M</td>
+<td>Minimize the current window</td>
+</tr>
+<tr>
+<td>Zoom</td>
+<td>—</td>
+<td>Toggle between maximized and normal size</td>
+</tr>
+<tr>
+<td>Previous</td>
+<td>Cmd/Ctrl+Shift+`</td>
+<td>Switch to the previous window</td>
+</tr>
+<tr>
+<td>Next</td>
+<td>Cmd/Ctrl+`</td>
+<td>Switch to the next window</td>
+</tr>
+<tr>
+<td>Cascade All</td>
+<td>—</td>
+<td>Arrange all windows in an overlapping cascade</td>
+</tr>
+<tr>
+<td>Tile All</td>
+<td>—</td>
+<td>Tile all windows in a grid to fill the screen</td>
+</tr>
+</tbody>
+</table>
+<p>Below the separator, all open windows are listed. The current window is shown with a checkmark and bold text. Click any window name to bring it to the front.</p>
+<h3 id="layout-persistence">Layout Persistence</h3>
+<p>Window size and all divider positions (editor/console split, editor/preview split, AI panel width) are saved automatically when you close a window and restored on next launch.</p>
+<hr />
+<h2 id="file-management">File Management</h2>
+<h3 id="saving">Saving</h3>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>Shortcut</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Save</td>
+<td>Cmd/Ctrl+S</td>
+<td>Save to current file (disabled if no changes)</td>
+</tr>
+<tr>
+<td>Save As...</td>
+<td>Cmd/Ctrl+Shift+S</td>
+<td>Save to a new file (auto-appends .src if needed)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="modified-file-indicator">Modified File Indicator</h3>
+<p>The Save menu item is only enabled when the file has unsaved changes. When you close a window or open a different file with unsaved changes, you'll be prompted to save.</p>
+<h3 id="generated-files">Generated Files</h3>
+<p>Generated source files are stored in a <code>gen/</code> subdirectory relative to your <code>.src</code> file:</p>
+<pre><code>myproject/
+├── hello.src          ← Your Codegen source
+└── gen/
+    ├── hello.cpp
+    ├── hello.java
+    ├── hello.js
+    ├── hello.pl
+    ├── hello.py
+    ├── hello.rs
+    ├── hello.swift
+    ├── Utils.hpp      ← Utility libraries (copied automatically)
+    ├── Utils.jar
+    └── ...
+</code></pre>
+<hr />
+<h2 id="keyboard-shortcuts-reference">Keyboard Shortcuts Reference</h2>
+<table>
+<thead>
+<tr>
+<th>Action</th>
+<th>macOS</th>
+<th>Windows/Linux</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>New Window</td>
+<td>Cmd+N</td>
+<td>Ctrl+N</td>
+</tr>
+<tr>
+<td>Open</td>
+<td>Cmd+O</td>
+<td>Ctrl+O</td>
+</tr>
+<tr>
+<td>Close Window</td>
+<td>Cmd+W</td>
+<td>Ctrl+W</td>
+</tr>
+<tr>
+<td>Save</td>
+<td>Cmd+S</td>
+<td>Ctrl+S</td>
+</tr>
+<tr>
+<td>Save As</td>
+<td>Cmd+Shift+S</td>
+<td>Ctrl+Shift+S</td>
+</tr>
+<tr>
+<td>Undo</td>
+<td>Cmd+Z</td>
+<td>Ctrl+Z</td>
+</tr>
+<tr>
+<td>Redo</td>
+<td>Cmd+Shift+Z</td>
+<td>Ctrl+Shift+Z</td>
+</tr>
+<tr>
+<td>Cut</td>
+<td>Cmd+X</td>
+<td>Ctrl+X</td>
+</tr>
+<tr>
+<td>Copy</td>
+<td>Cmd+C</td>
+<td>Ctrl+C</td>
+</tr>
+<tr>
+<td>Paste</td>
+<td>Cmd+V</td>
+<td>Ctrl+V</td>
+</tr>
+<tr>
+<td>Find/Replace</td>
+<td>Cmd+F</td>
+<td>Ctrl+F</td>
+</tr>
+<tr>
+<td>Indent</td>
+<td>Cmd+]</td>
+<td>Ctrl+]</td>
+</tr>
+<tr>
+<td>Outdent</td>
+<td>Cmd+[</td>
+<td>Ctrl+[</td>
+</tr>
+<tr>
+<td>Stop Program</td>
+<td>Cmd+.</td>
+<td>Ctrl+.</td>
+</tr>
+<tr>
+<td>Minimize</td>
+<td>Cmd+M</td>
+<td>Ctrl+M</td>
+</tr>
+<tr>
+<td>Next Window</td>
+<td>Cmd+`</td>
+<td>Ctrl+`</td>
+</tr>
+<tr>
+<td>Previous Window</td>
+<td>Cmd+Shift+`</td>
+<td>Ctrl+Shift+`</td>
+</tr>
+<tr>
+<td>Quit</td>
+<td>Cmd+Q</td>
+<td>Ctrl+Q</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="platform-notes">Platform Notes</h2>
+<h3 id="macos">macOS</h3>
+<ul>
+<li>Uses the native system menu bar</li>
+<li>About, Settings, and Quit are in the application menu</li>
+<li>Double-clicking <code>.src</code> files in Finder opens them in a new CodegenIDE window</li>
+<li>Input method auto-correction is disabled in the editor</li>
+</ul>
+<h3 id="windows">Windows</h3>
+<ul>
+<li>Application menu items (About, Settings, License Key, Quit) appear in a &quot;CodegenIDE&quot; menu</li>
+<li>MSI installer registers <code>.src</code> file association</li>
+</ul>
+<h3 id="linux">Linux</h3>
+<ul>
+<li>Requires X11 (XWayland supported)</li>
+<li>WM_CLASS is set for proper taskbar integration</li>
+<li>DEB/RPM packages register <code>.src</code> file association</li>
+</ul>
+<p>©2026 Richard Lesh.  All rights reserved.</p>
+</body></html>

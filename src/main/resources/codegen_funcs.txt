@@ -773,6 +773,7 @@ putbyte(<byte>) => void
 	pl:			print chr({1})
 	py:			!STDOUT!.buffer.write({1}.to_bytes(1, byteorder='big', signed=False))
 	rs:			!STDOUT!.write(&[{1}])?
+	rsRequire:	use std::io::{Write};
 	swift:		!STDOUT!.write(Data([{1}]))
 
 # putchar(<char>)
@@ -1795,7 +1796,7 @@ push([any], any) => void
 	cpp:		Utils::push({1}, {2})
 	java:		{1}.add({2})
 	js:			{1}.push({2})
-	pl:			push({1}, {2})
+	pl:			push(@{{1}}, {2})
 	py:			{1}.append({2})
 	rs:			{1}.push({2})
 	swift:		{1}.append({2})
@@ -1808,7 +1809,7 @@ pop([any]) => any
 	cpp:		Utils::pop({1})
 	java:		{1}.remove({1}.size() - 1)
 	js:			{1}.pop()
-	pl:			pop({1})
+	pl:			pop(@{{1}})
 	py:			{1}.pop()
 	rs:			{1}.pop().unwrap()
 	swift:		{1}.removeLast()
@@ -1834,26 +1835,26 @@ shift([any]) => any
 	cpp:		Utils::shift({1})
 	java:		{1}.remove(0)
 	js:			{1}.shift()
-	pl:			shift({1})
+	pl:			shift(@{{1}})
 	py:			{1}.pop(0)
 	rs:			{1}.remove(0)
 	swift:		{1}.removeFirst()
 
 shift[any]*([any]*) => any
-	pl:			shift(@{1})
+	pl:			shift(@{{1}})
 
 # unshift(list, value)
 unshift([any], any) => void
 	cpp:		Utils::unshift({1}, {2})
 	java:		{1}.add(0, {2})
 	js:			{1}.unshift({2})
-	pl:			unshift({1}, {2})
+	pl:			unshift(@{{1}}, {2})
 	py:			{1}.insert(0,{2})
 	rs:			{1}.insert(0,{2})
 	swift:		{1}.insert({2}, at: 0)
 
 unshift[any]*any([any]*, any) => void
-	pl:			unshift(@{1}, {2})
+	pl:			unshift(@{{1}}, {2})
 
 # peek_front(list)
 peek_front([any]) => any

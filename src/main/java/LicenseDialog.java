@@ -50,7 +50,7 @@ public class LicenseDialog {
         link.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         link.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
-                try { Desktop.getDesktop().browse(java.net.URI.create("https://glowingcat.com")); }
+                try { Desktop.getDesktop().browse(java.net.URI.create("https://glowingcat.com/CodegenIDE")); }
                 catch (Exception ignored) {}
             }
         });

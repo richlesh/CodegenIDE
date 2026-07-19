@@ -32,6 +32,7 @@ public class AppSettings {
     public String llmVendor = "OpenAI";
     public String llmModel = "gpt-4o";
     public String llmApiKey = null;
+    public String llmEndpoint = "";
     public Color userPromptColor = new Color(0x99, 0xCC, 0xFF);
     public Color aiResponseColor = new Color(0x00, 0x33, 0x99);
     public Color consoleFg = new Color(0xBB, 0xBB, 0xBB);
@@ -41,7 +42,7 @@ public class AppSettings {
     public int windowHeight = 768;
     public int mainDivider = -1;    // editor/terminal vertical split
     public int aiDivider = -1;      // main/AI horizontal split
-    public int editorPreviewDivider = -1;  // editor/preview horizontal split
+    public double editorPreviewDivider = 0.5;  // editor/preview ratio (0.0–1.0)
     // Developer tool paths (empty string means auto-detect)
     public String cppPath = "";
     public String javaPath = "";
@@ -75,6 +76,7 @@ public class AppSettings {
             if (llmVendor != null) sb.append("  \"llmVendor\": \"").append(escape(llmVendor)).append("\",\n");
             if (llmModel != null) sb.append("  \"llmModel\": \"").append(escape(llmModel)).append("\",\n");
             if (llmApiKey != null) sb.append("  \"llmApiKey\": \"").append(escape(llmApiKey)).append("\",\n");
+            if (!llmEndpoint.isEmpty()) sb.append("  \"llmEndpoint\": \"").append(escape(llmEndpoint)).append("\",\n");
             sb.append("  \"userPromptColor\": \"").append(colorToHex(userPromptColor)).append("\",\n");
             sb.append("  \"aiResponseColor\": \"").append(colorToHex(aiResponseColor)).append("\",\n");
             sb.append("  \"consoleFg\": \"").append(colorToHex(consoleFg)).append("\",\n");
@@ -132,6 +134,9 @@ public class AppSettings {
             if (model != null) s.llmModel = model;
             s.llmApiKey = extractString(json, "llmApiKey");
 
+            String endpoint = extractString(json, "llmEndpoint");
+            if (endpoint != null) s.llmEndpoint = endpoint;
+
             String upc = extractString(json, "userPromptColor");
             if (upc != null) s.userPromptColor = hexToColor(upc);
             String arc = extractString(json, "aiResponseColor");
@@ -153,8 +158,16 @@ public class AppSettings {
             if (md != null) s.mainDivider = md;
             Integer ad = extractInt(json, "aiDivider");
             if (ad != null) s.aiDivider = ad;
-            Integer epd = extractInt(json, "editorPreviewDivider");
-            if (epd != null) s.editorPreviewDivider = epd;
+            // editorPreviewDivider: stored as ratio 0.0–1.0; legacy pixel values (>1) reset to default
+            Double epdRatio = extractDouble(json, "editorPreviewDivider");
+            if (epdRatio != null && epdRatio >= 0.0 && epdRatio <= 1.0) {
+                s.editorPreviewDivider = epdRatio;
+            } else {
+                Integer epd = extractInt(json, "editorPreviewDivider");
+                if (epd != null && epd > 1) {
+                    s.editorPreviewDivider = 0.5; // legacy pixel value, reset to default
+                }
+            }
 
             String cpp = extractString(json, "cppPath");
             if (cpp != null) s.cppPath = cpp;
@@ -204,6 +217,11 @@ public class AppSettings {
     private static Integer extractInt(String json, String key) {
         Matcher m = Pattern.compile("\"" + key + "\"\\s*:\\s*(-?\\d+)").matcher(json);
         return m.find() ? Integer.parseInt(m.group(1)) : null;
+    }
+
+    private static Double extractDouble(String json, String key) {
+        Matcher m = Pattern.compile("\"" + key + "\"\\s*:\\s*(-?\\d+\\.\\d+)").matcher(json);
+        return m.find() ? Double.parseDouble(m.group(1)) : null;
     }
 
     private static List<String> extractArray(String json, String key) {

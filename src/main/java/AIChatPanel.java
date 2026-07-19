@@ -273,6 +273,54 @@ public class AIChatPanel extends JPanel {
             addAiBubble(explanation);
         }
 
+        // Code summary with Show/Hide toggle
+        int lineCount = newCode.split("\n", -1).length;
+        JPanel codeRow = new JPanel(new BorderLayout());
+        codeRow.setOpaque(false);
+        codeRow.setBorder(BorderFactory.createEmptyBorder(2, 14, 4, 6));
+        codeRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+
+        JLabel summaryLabel = new JLabel("\u2713 Code suggestion (" + lineCount + " lines)");
+        summaryLabel.setFont(new Font(settings.aiFontName, Font.ITALIC, settings.aiFontSize));
+        summaryLabel.setForeground(new Color(80, 80, 80));
+
+        JButton toggleBtn = new JButton("Show");
+        toggleBtn.setFont(new Font(settings.aiFontName, Font.PLAIN, settings.aiFontSize - 1));
+        toggleBtn.setBorderPainted(true);
+        toggleBtn.setFocusPainted(false);
+        toggleBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+
+        JPanel headerPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        headerPanel.setOpaque(false);
+        headerPanel.add(summaryLabel);
+        headerPanel.add(toggleBtn);
+        codeRow.add(headerPanel, BorderLayout.NORTH);
+
+        JTextArea codeArea = new JTextArea(newCode);
+        codeArea.setFont(new Font(settings.fontName, Font.PLAIN, settings.aiFontSize));
+        codeArea.setEditable(false);
+        codeArea.setLineWrap(false);
+        codeArea.setBackground(new Color(240, 240, 240));
+        codeArea.setBorder(BorderFactory.createEmptyBorder(6, 8, 6, 8));
+        JScrollPane codeScroll = new JScrollPane(codeArea);
+        codeScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        codeScroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        codeScroll.setPreferredSize(new Dimension(0, Math.min(300, lineCount * (settings.aiFontSize + 4) + 16)));
+        codeScroll.setVisible(false);
+        codeRow.add(codeScroll, BorderLayout.CENTER);
+
+        toggleBtn.addActionListener(e -> {
+            boolean showing = codeScroll.isVisible();
+            codeScroll.setVisible(!showing);
+            toggleBtn.setText(showing ? "Show" : "Hide");
+            chatPanel.revalidate();
+            chatPanel.repaint();
+            scrollToBottom();
+        });
+
+        chatPanel.add(codeRow);
+
+        // Allow/Reject buttons
         JPanel btnRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         btnRow.setOpaque(false);
         btnRow.setBorder(BorderFactory.createEmptyBorder(2, 14, 6, 6));
@@ -388,7 +436,11 @@ public class AIChatPanel extends JPanel {
             case "Alibaba" -> "https://dashscope-us.aliyuncs.com/compatible-mode/v1";
             case "Anthropic" -> "https://api.anthropic.com/v1";
             case "DeepSeek" -> "https://api.deepseek.com/v1";
+            case "Generic" -> settings.llmEndpoint != null && !settings.llmEndpoint.isEmpty()
+                ? (settings.llmEndpoint.endsWith("/") ? settings.llmEndpoint.substring(0, settings.llmEndpoint.length() - 1) : settings.llmEndpoint)
+                : "https://api.openai.com/v1";
             case "Google" -> "https://generativelanguage.googleapis.com/v1beta/openai";
+            case "Moonshot" -> "https://api.moonshot.ai/v1";
             case "Ollama" -> "http://localhost:11434/v1";
             case "OpenAI" -> "https://api.openai.com/v1";
             default -> "https://api.openai.com/v1";
