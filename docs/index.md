@@ -1,3 +1,5 @@
+<link rel="stylesheet" href="styles.css">
+
 # CodegenIDE User Guide
 
 CodegenIDE is a lightweight desktop IDE for the Codegen programming language. This guide covers how to use the IDE's features effectively.
@@ -411,3 +413,5 @@ myproject/
 - DEB/RPM packages register `.src` file association
 
 ©2026 Richard Lesh.  All rights reserved.
+
+[Codgen Language](https://pureprogrammer.org/Codegen/docs/) | [Pure Programmer](https://pureprogrammer.org) | [Glowing Cat Software](https://glowingcat.com)

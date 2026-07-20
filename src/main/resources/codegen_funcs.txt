@@ -70,7 +70,7 @@ defined(any) => <bool>
 	js:			Utils.defined({1})
 	pl:			defined({1})
 	py:			Utils.defined({1})
-	rs:			true
+	rs:			{1}.is_some()
 	swift:		Utils.defined({1})
 
 # isfinite(x)
@@ -317,7 +317,7 @@ simple_message_format(<string>,...) => <string>
 # optionalToString(Optional)
 optionalToString(<optional>) => <string>
 	default:	{1}
-	rs:			{1}.unwrap_or_else(o"<None>").to_string()
+	rs:			{1}.as_deref().unwrap_or("<None>")
 	swift:		String({1} ?? "<Nil>")
 
 # All args will be in {0}
@@ -2375,6 +2375,11 @@ ref(any) => any
 	rs:			&{1}
 	default:	{1}
 
+# as_ref(any)
+as_ref(any) => any
+	rs:			{1}.as_ref()
+	default:	{1}
+
 # mutref(any)
 mutref(any) => any
 	rs:			&mut {1}
@@ -2386,8 +2391,9 @@ deref(any) => any
 	default:	{1}
 
 # some(any) Optional value in Rust
-    rs:         Some({1})
-    default:    {1}
+some(any) => any
+	rs:			Some({1})
+	default:	{1}
 
 # unwrap(any)
 unwrap(any) => any

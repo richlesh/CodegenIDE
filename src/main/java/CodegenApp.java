@@ -931,6 +931,18 @@ public class CodegenApp {
                     Files.getLastModifiedTime(langSource)) > 0;
             } catch (IOException ignored) { needsRegen = true; }
         }
+        // Also regenerate if the Codegen compiler jar is newer than generated source
+        if (!needsRegen) {
+            try {
+                String cp = CODEGEN_CLASSPATH;
+                String libDir = cp.endsWith("/*") ? cp.substring(0, cp.length() - 2) : cp;
+                Path codegenJar = Path.of(libDir, "Codegen-1.0.jar");
+                if (Files.exists(codegenJar)) {
+                    needsRegen = Files.getLastModifiedTime(codegenJar).compareTo(
+                        Files.getLastModifiedTime(langSource)) > 0;
+                }
+            } catch (IOException ignored) { needsRegen = true; }
+        }
 
         // Load the target language source into the preview pane
         previewPanel.setSelectedLanguage(lang);
@@ -1004,7 +1016,10 @@ public class CodegenApp {
                 SwingUtilities.invokeLater(() -> appendConsole("> Compiling C++...\n"));
                 java.util.List<String> compileCmd = new java.util.ArrayList<>(java.util.List.of(
                     settings.getEffectiveToolPath("g++"), "-std=c++20", "-w", baseName + ".cpp", "-o", baseName,
-                    "-I/opt/homebrew/include", "-L/opt/homebrew/lib", "-lfmt"));
+                    "-lfmt"));
+                if (System.getProperty("os.name").toLowerCase().contains("mac")) {
+                    compileCmd.addAll(java.util.List.of("-I/opt/homebrew/include", "-L/opt/homebrew/lib"));
+                }
                 runProcess(compileCmd, dir);
                 if (Files.exists(dir.resolve(baseName))) {
                     SwingUtilities.invokeLater(() -> appendConsole("> Running...\n"));
